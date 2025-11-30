@@ -108,7 +108,7 @@ export default function PlayerSeat({
               <PlayingCard
                 rank={showCards || isHero ? card.rank : null}
                 suit={showCards || isHero ? card.suit : null}
-                faceDown={!showCards && !isHero}
+                faceDown={!showCards}
               />
             </div>
           ))}

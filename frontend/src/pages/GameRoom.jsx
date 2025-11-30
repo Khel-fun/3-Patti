@@ -331,6 +331,53 @@ export default function GameRoom({ socket }) {
     };
   }, [socket, gameState]);
 
+  // Winner Animation Effect
+  useEffect(() => {
+    if (gameEnded && winnerInfo) {
+      // 1. Modal Entrance Animation
+      gsap.fromTo("#winner-modal",
+        { scale: 0.5, opacity: 0 },
+        { scale: 1, opacity: 1, duration: 0.8, ease: "elastic.out(1, 0.5)", delay: 0.2 }
+      );
+
+      gsap.fromTo(".winner-content-item",
+        { y: 20, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.5, stagger: 0.1, delay: 0.6, ease: "power2.out" }
+      );
+
+      // 2. Falling Chips Animation
+      const container = document.body;
+      const chipCount = 50;
+
+      for (let i = 0; i < chipCount; i++) {
+        const chip = document.createElement('img');
+        chip.src = '/chip.png'; // Using existing chip asset
+        chip.className = 'fixed z-[100] w-8 h-8 pointer-events-none';
+
+        // Random start position
+        const startX = Math.random() * window.innerWidth;
+        const startY = -50 - Math.random() * 500; // Start above screen
+
+        chip.style.left = `${startX}px`;
+        chip.style.top = `${startY}px`;
+
+        container.appendChild(chip);
+
+        // Animate falling
+        gsap.to(chip, {
+          y: window.innerHeight + 500,
+          rotation: Math.random() * 720,
+          duration: 2 + Math.random() * 3,
+          ease: "none",
+          delay: Math.random() * 2,
+          onComplete: () => {
+            chip.remove();
+          }
+        });
+      }
+    }
+  }, [gameEnded, winnerInfo]);
+
   const handleCopyRoomId = () => {
     navigator.clipboard.writeText(roomId);
     setMessage("Room ID copied to clipboard!");
@@ -658,36 +705,40 @@ export default function GameRoom({ socket }) {
       {/* Game Table Container */}
       <div className="relative w-full h-[calc(100vh-64px)] flex items-center justify-center overflow-hidden perspective-[1000px]">
 
-        {/* Dealer Girl */}
-        <div className="absolute top-[-2%] left-1/2 -translate-x-1/2 z-0 w-40 h-40 md:w-56 md:h-56 pointer-events-none transition-all duration-500 z-50">
-          <img
-            src="/dealer.png"
-            alt="Dealer"
-            className="w-full h-full object-contain drop-shadow-2xl"
-          />
-          {/* Dealer Hand Position Anchor */}
-          <div id="dealer-hand-position" className="absolute bottom-8 left-1/2 -translate-x-1/2 w-1 h-1"></div>
-        </div>
+        {/* Table & Dealer Wrapper - Defines the scale for both */}
+        <div className="relative w-[95vw] md:w-[85vw] max-w-[1000px] aspect-[1.8/1]">
 
-        {/* Table Surface - Slightly Reduced Size */}
-        <div className="relative w-[85vw] max-w-[1000px] aspect-[1.8/1] transform-style-3d rotate-x-[20deg] transition-transform duration-500 z-10">
-          <img
-            src="/table.jpg"
-            alt="Poker Table"
-            className="absolute inset-0 w-full h-full object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
-          />
+          {/* Dealer - Positioned relative to the wrapper (table size) */}
+          <div className="absolute -top-[20%] left-1/2 -translate-x-1/2 w-[30%] h-[40%] flex justify-center items-end z-50">
+            <img
+              src="/dealer.png"
+              alt="Dealer"
+              className="h-full object-contain drop-shadow-2xl"
+            />
+            {/* Dealer Hand Position Anchor */}
+            <div id="dealer-hand-position" className="absolute bottom-[10%] left-1/2 -translate-x-1/2 w-1 h-1"></div>
+          </div>
 
-          {/* Pot in Center - Chips Group Image */}
-          <div className="absolute top-[51%] left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 flex flex-col items-center gap-2">
-            {/* Chips Group Image - Centered */}
-            <div id="chips-group-pot" className="relative w-32 h-24">
-              <img src="/chips-group.png" alt="Pot Chips" className="w-full h-full object-contain drop-shadow-xl" />
-            </div>
+          {/* Table Surface - Fills the wrapper, has the rotation */}
+          <div className="w-full h-full transform-style-3d rotate-x-[20deg] transition-transform duration-500 z-10">
+            <img
+              src="/table.jpg"
+              alt="Poker Table"
+              className="absolute inset-0 w-full h-full object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
+            />
 
-            {/* POT Text Below */}
-            <div className="bg-black/70 backdrop-blur-sm rounded-full px-4 py-1 border border-yellow-500/30">
-              <div className="text-yellow-100 font-bold text-lg shadow-black drop-shadow-md">
-                POT: {formatChips(gameState.pot)}
+            {/* Pot in Center - Chips Group Image */}
+            <div className="absolute top-[51%] left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 flex flex-col items-center gap-[2%]">
+              {/* Chips Group Image - Centered */}
+              <div id="chips-group-pot" className="relative w-[15%] aspect-[4/3] min-w-[80px]">
+                <img src="/chips-group.png" alt="Pot Chips" className="w-full h-full object-contain drop-shadow-xl" />
+              </div>
+
+              {/* POT Text Below */}
+              <div className="bg-black/70 backdrop-blur-sm rounded-full px-4 py-1 border border-yellow-500/30">
+                <div className="text-yellow-100 font-bold text-sm md:text-lg shadow-black drop-shadow-md whitespace-nowrap">
+                  POT: {formatChips(gameState.pot)}
+                </div>
               </div>
             </div>
           </div>
@@ -704,30 +755,51 @@ export default function GameRoom({ socket }) {
               gameState.gameStarted && gameState.currentPlayerIndex === index;
             const isDealer = gameState.dealerIndex === index;
 
-            // REFINED POSITIONING LOGIC
-            let style = {};
+            // RESPONSIVE POSITIONING USING TAILWIND CLASSES
+            let positionClasses = "absolute pointer-events-auto transition-all duration-500";
 
             // Hero (Bottom Center)
-            if (index === 0) style = { bottom: '2%', left: '50%', transform: 'translateX(-50%)' };
-
-            // Opponent Logic for 2 Players: Place at Top Right or Top Left, NOT beside
+            if (index === 0) {
+              positionClasses += " bottom-[5%] md:bottom-[2%] left-1/2 -translate-x-1/2";
+            }
+            // Opponent Logic for 2 Players
             else if (gameState.players.length === 2) {
-              style = { top: '15%', right: '20%' }; // Top Right for 1v1
+              positionClasses += " top-[15%] right-[5%] md:right-[20%]";
             }
             // Standard 6-max Logic
             else {
-              if (index === 1) style = { bottom: '20%', left: '10%' };
-              else if (index === 2) style = { top: '20%', left: '15%' };
-              else if (index === 3) style = { top: '10%', left: '50%', transform: 'translateX(-50%)' }; // Top Center (if 6 players, might overlap dealer slightly but okay)
-              else if (index === 4) style = { top: '20%', right: '15%' };
-              else if (index === 5) style = { bottom: '20%', right: '10%' };
+              if (index === 1) positionClasses += " bottom-[25%] md:bottom-[20%] left-[2%] md:left-[10%]";
+              else if (index === 2) positionClasses += " top-[20%] left-[5%] md:left-[15%]";
+              else if (index === 3) positionClasses += " top-[10%] left-1/2 -translate-x-1/2";
+              else if (index === 4) positionClasses += " top-[20%] right-[5%] md:right-[15%]";
+              else if (index === 5) positionClasses += " bottom-[25%] md:bottom-[20%] right-[2%] md:right-[10%]";
             }
 
-            const playerCards = player.id === playerId ? myCards : [];
+            // Logic to determine cards to pass to PlayerSeat
+            // Logic to determine cards to pass to PlayerSeat
+            let playerCards = [];
+            if (player.id === playerId) {
+              // For Hero: 
+              // 1. If we have actual cards, ALWAYS use them
+              if (myCards && myCards.length > 0) {
+                playerCards = myCards;
+              }
+              // 2. If no cards yet (Blind), but game started & not folded, show placeholders
+              else if (gameState.gameStarted && !player.isFolded) {
+                playerCards = [{}, {}, {}]; // 3 Placeholders
+              }
+            } else {
+              // For Opponents: Use 3 placeholders if game started & not folded
+              if (gameState.gameStarted && !player.isFolded) {
+                playerCards = [{}, {}, {}]; // 3 Placeholders
+              }
+            }
+
+            // Force re-render when showCards changes for Hero
             const shouldShowCards = player.id === playerId && showCards;
 
             return (
-              <div key={player.id} className="absolute pointer-events-auto" style={style} id={`player-seat-${index}`}>
+              <div key={player.id} className={positionClasses} id={`player-seat-${index}`}>
                 <PlayerSeat
                   player={player}
                   isCurrentPlayer={isCurrentTurn}
@@ -744,18 +816,18 @@ export default function GameRoom({ socket }) {
 
       {/* Sophisticated Action Panel */}
       {gameState.gameStarted && currentPlayer && !currentPlayer.isFolded && (
-        <div className="absolute bottom-8 right-8 flex flex-col items-end gap-4 z-50">
+        <div className="absolute bottom-4 right-4 md:bottom-8 md:right-8 flex flex-col items-end gap-2 md:gap-4 z-50">
 
           {/* Info Card */}
-          <div className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl rounded-2xl p-5 border border-white/10 shadow-2xl min-w-[200px]">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-gray-400 text-xs font-bold tracking-widest uppercase">Your Stack</span>
-              <span className="text-yellow-400 font-bold text-xl font-mono">{formatChips(currentPlayer.chips)}</span>
+          <div className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl rounded-2xl p-3 md:p-5 border border-white/10 shadow-2xl min-w-[160px] md:min-w-[200px]">
+            <div className="flex justify-between items-center mb-1 md:mb-2">
+              <span className="text-gray-400 text-[10px] md:text-xs font-bold tracking-widest uppercase">Your Stack</span>
+              <span className="text-yellow-400 font-bold text-lg md:text-xl font-mono">{formatChips(currentPlayer.chips)}</span>
             </div>
-            <div className="h-px w-full bg-gradient-to-r from-transparent via-white/20 to-transparent my-2"></div>
+            <div className="h-px w-full bg-gradient-to-r from-transparent via-white/20 to-transparent my-1 md:my-2"></div>
             <div className="flex justify-between items-center">
-              <span className="text-gray-400 text-xs font-bold tracking-widest uppercase">Table Bet</span>
-              <span className="text-blue-400 font-bold text-lg font-mono">{formatChips(gameState.currentBet)}</span>
+              <span className="text-gray-400 text-[10px] md:text-xs font-bold tracking-widest uppercase">Table Bet</span>
+              <span className="text-blue-400 font-bold text-base md:text-lg font-mono">{formatChips(gameState.currentBet)}</span>
             </div>
           </div>
 
@@ -763,16 +835,16 @@ export default function GameRoom({ socket }) {
           <div className="flex flex-col gap-3 items-end">
 
             {/* Primary Actions Row */}
-            <div className="flex gap-3">
+            <div className="flex gap-2 md:gap-3">
               {isMyTurn && showCards && gameState?.players.filter((p) => !p.isFolded).length >= 2 && (
-                <button onClick={handleShow} className="h-12 px-6 rounded-full bg-yellow-600 hover:bg-yellow-500 text-white font-bold shadow-lg border border-yellow-400 transition-all hover:scale-105 active:scale-95 flex items-center gap-2">
-                  <Eye size={18} /> SHOW
+                <button onClick={handleShow} className="h-10 px-4 md:h-12 md:px-6 rounded-full bg-yellow-600 hover:bg-yellow-500 text-white text-sm md:text-base font-bold shadow-lg border border-yellow-400 transition-all hover:scale-105 active:scale-95 flex items-center gap-2">
+                  <Eye size={16} className="md:w-[18px] md:h-[18px]" /> SHOW
                 </button>
               )}
 
               {isMyTurn && (
-                <button onClick={handleFold} className="h-12 px-6 rounded-full bg-red-600 hover:bg-red-500 text-white font-bold shadow-lg border border-red-400 transition-all hover:scale-105 active:scale-95 flex items-center gap-2">
-                  <X size={18} /> FOLD
+                <button onClick={handleFold} className="h-10 px-4 md:h-12 md:px-6 rounded-full bg-red-600 hover:bg-red-500 text-white text-sm md:text-base font-bold shadow-lg border border-red-400 transition-all hover:scale-105 active:scale-95 flex items-center gap-2">
+                  <X size={16} className="md:w-[18px] md:h-[18px]" /> FOLD
                 </button>
               )}
             </div>
@@ -792,7 +864,7 @@ export default function GameRoom({ socket }) {
                       key={opt.label}
                       onClick={() => setSelectedBetAmount(opt.val)}
                       className={`
-                                      w-14 h-10 rounded-lg flex flex-col items-center justify-center transition-all
+                                      w-10 h-8 md:w-14 md:h-10 rounded-lg flex flex-col items-center justify-center transition-all
                                       ${selectedBetAmount === opt.val
                           ? `bg-${opt.color}-600 text-white shadow-lg scale-105 ring-2 ring-${opt.color}-400`
                           : `bg-gray-800 text-gray-400 hover:bg-gray-700`}
@@ -856,37 +928,58 @@ export default function GameRoom({ socket }) {
       {/* Game Ended Overlay */}
       {
         gameEnded && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-gradient-to-br from-yellow-600 to-orange-600 rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl border-4 border-yellow-400">
-              <div className="text-center">
-                <Trophy className="w-24 h-24 text-white mx-auto mb-4 animate-bounce" />
+          <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-[100]">
+            {/* Background Glow */}
+            <div className="absolute inset-0 overflow-hidden">
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-yellow-600/20 rounded-full blur-[100px] animate-pulse"></div>
+            </div>
+
+            <div
+              id="winner-modal"
+              className="relative bg-black/80 backdrop-blur-xl rounded-3xl p-10 max-w-md w-full mx-4 border border-yellow-500/30 shadow-[0_0_50px_rgba(234,179,8,0.3)] text-center overflow-hidden"
+            >
+              {/* Decorative Elements */}
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-yellow-500 to-transparent"></div>
+              <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-yellow-500 to-transparent"></div>
+
+              <div className="relative z-10">
+                <div className="winner-content-item mb-6 relative inline-block">
+                  <div className="absolute inset-0 bg-yellow-500/50 blur-xl rounded-full"></div>
+                  <Trophy className="w-28 h-28 text-yellow-400 relative z-10 drop-shadow-[0_0_15px_rgba(250,204,21,0.5)]" />
+                </div>
 
                 {winnerInfo ? (
                   <>
-                    <h2 className="text-white text-4xl font-bold mb-2">
-                      🎉 Winner! 🎉
+                    <h2 className="winner-content-item text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 via-yellow-400 to-yellow-200 text-5xl font-black mb-2 tracking-tight drop-shadow-sm">
+                      WINNER!
                     </h2>
-                    <p className="text-yellow-100 text-2xl font-semibold mb-2">
+                    <p className="winner-content-item text-white/90 text-2xl font-medium mb-6 tracking-wide">
                       {winnerInfo.name}
                     </p>
-                    <div className="bg-white/20 rounded-lg p-4 mb-4">
-                      <p className="text-white text-sm mb-1">Prize Money</p>
-                      <p className="text-yellow-200 text-3xl font-bold">
-                        {formatChips(winnerInfo.pot)}
-                      </p>
+
+                    <div className="winner-content-item bg-gradient-to-b from-white/10 to-transparent rounded-2xl p-6 mb-8 border border-white/10 relative overflow-hidden group">
+                      <div className="absolute inset-0 bg-yellow-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                      <p className="text-gray-400 text-xs font-bold tracking-[0.2em] uppercase mb-2">Total Pot Won</p>
+                      <div className="flex items-center justify-center gap-3">
+                        <Coins className="w-8 h-8 text-yellow-400" />
+                        <p className="text-yellow-100 text-4xl font-bold font-mono tracking-tight text-shadow-lg">
+                          {formatChips(winnerInfo.pot)}
+                        </p>
+                      </div>
                     </div>
+
                     {winnerInfo.reason && (
-                      <p className="text-yellow-100 text-sm mb-4">
-                        {winnerInfo.reason}
+                      <p className="winner-content-item text-gray-400 text-sm mb-8 italic">
+                        "{winnerInfo.reason}"
                       </p>
                     )}
                   </>
                 ) : (
                   <>
-                    <h2 className="text-white text-3xl font-bold mb-4">
+                    <h2 className="winner-content-item text-white text-4xl font-bold mb-4">
                       Game Ended
                     </h2>
-                    <p className="text-yellow-100 mb-4">
+                    <p className="winner-content-item text-gray-300 mb-8">
                       The game has concluded.
                     </p>
                   </>
@@ -894,11 +987,10 @@ export default function GameRoom({ socket }) {
 
                 <Button
                   onClick={() => navigate("/")}
-                  size="lg"
-                  className="w-full bg-white text-orange-600 hover:bg-gray-100 font-bold text-lg"
+                  className="winner-content-item w-full h-14 bg-gradient-to-r from-yellow-600 to-yellow-700 hover:from-yellow-500 hover:to-yellow-600 text-white font-bold text-lg rounded-xl shadow-lg shadow-yellow-900/20 border border-yellow-500/20 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 group"
                 >
-                  <ArrowLeft className="w-5 h-5 mr-2" />
-                  Exit to Home
+                  <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                  Return to Lobby
                 </Button>
               </div>
             </div>
