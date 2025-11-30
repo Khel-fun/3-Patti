@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import Button from "@/components/Button";
 import PlayerSeat from "@/components/PlayerSeat";
+import PlayingCard from "@/components/PlayingCard";
 import { formatChips } from "@/lib/utils";
 import { useContracts } from "@/hooks/useContracts";
 import GameABI from "@/contracts/TeenPattiGame.json";
@@ -36,6 +37,8 @@ export default function GameRoom({ socket }) {
   );
   const [gameState, setGameState] = useState(null);
   const [myCards, setMyCards] = useState([]);
+  const [allPlayerCards, setAllPlayerCards] = useState({}); // Store all players' cards for showdown
+  const [isShowdown, setIsShowdown] = useState(false);
   const [showCards, setShowCards] = useState(false);
   const [betAmount, setBetAmount] = useState(0);
   const [message, setMessage] = useState("");
@@ -136,10 +139,32 @@ export default function GameRoom({ socket }) {
       setTimeout(() => setMessage(""), 3000);
     });
 
+    socket.on("showdownStarted", ({ allCards, gameState: newGameState }) => {
+      setGameState(newGameState);
+      setShowCards(true);
+      if (allCards) {
+        setAllPlayerCards(allCards);
+      }
+      setIsShowdown(true);
+      setMessage("Showdown! Revealing cards...");
+
+      // Update myCards if I am part of the game (though showCards=true handles visibility)
+      // But we might want to ensure we have the data if we didn't before
+      if (allCards && playerId && allCards[playerId]) {
+        setMyCards(allCards[playerId]);
+      }
+
+      // We could also store other players' cards in a state if we want to show them explicitly
+      // currently PlayerSeat logic might need adjustment to show OPPONENT cards if showCards is true
+      // Let's check PlayerSeat logic.
+    });
+
     socket.on("gameEnded", async ({ winner, pot, allCards, reason }) => {
+      setIsShowdown(false); // End showdown mode
       if (allCards) {
         // Show all cards at the end
         setShowCards(true);
+        setAllPlayerCards(allCards);
       }
 
       setGameEnded(true);
@@ -601,16 +626,16 @@ export default function GameRoom({ socket }) {
   // Position players around the table
   const getPlayerPosition = (index, total) => {
     if (total <= 2) {
-      return index === 0 ? "bottom" : "top";
+      return index === 0 ? "bottom" : "right"; // Visually on the right
     }
     if (total === 3) {
-      return ["bottom", "top", "top"][index];
+      return ["bottom", "left", "right"][index];
     }
     if (total === 4) {
       return ["bottom", "left", "top", "right"][index];
     }
     if (total === 5) {
-      return ["bottom", "left", "top", "top", "right"][index];
+      return ["bottom", "left", "top", "right", "right"][index];
     }
     return ["bottom", "left", "left", "top", "right", "right"][index];
   };
@@ -800,25 +825,29 @@ export default function GameRoom({ socket }) {
 
               // Logic to determine cards to pass to PlayerSeat
               let playerCards = [];
-              if (player.id === playerId) {
-                // For Hero: 
-                // 1. If we have actual cards, ALWAYS use them
+
+              // 1. If we have all cards (Showdown/Game End), use them for EVERYONE
+              if (showCards && allPlayerCards && allPlayerCards[player.id]) {
+                playerCards = allPlayerCards[player.id];
+              }
+              // 2. If it's Hero
+              else if (player.id === playerId) {
                 if (myCards && myCards.length > 0) {
                   playerCards = myCards;
                 }
-                // 2. If no cards yet (Blind), but game started & not folded, show placeholders
                 else if (gameState.gameStarted && !player.isFolded) {
                   playerCards = [{}, {}, {}]; // 3 Placeholders
                 }
-              } else {
-                // For Opponents: Use 3 placeholders if game started & not folded
+              }
+              // 3. Opponents (during game, before showdown)
+              else {
                 if (gameState.gameStarted && !player.isFolded) {
                   playerCards = [{}, {}, {}]; // 3 Placeholders
                 }
               }
 
-              // Force re-render when showCards changes for Hero
-              const shouldShowCards = player.id === playerId && showCards;
+              // Force re-render when showCards changes for Hero OR during showdown
+              const shouldShowCards = (player.id === playerId && showCards) || (showCards && allPlayerCards && allPlayerCards[player.id]);
 
               return (
                 <div key={player.id} className={positionClasses} id={`player-seat-${index}`}>
@@ -827,7 +856,7 @@ export default function GameRoom({ socket }) {
                     isCurrentPlayer={isCurrentTurn}
                     isDealer={isDealer}
                     cards={playerCards}
-                    showCards={shouldShowCards}
+                    showCards={!!shouldShowCards}
                     position={position}
                   />
                 </div>
@@ -874,42 +903,15 @@ export default function GameRoom({ socket }) {
 
             {/* Betting Interface */}
             {isMyTurn && !showBetInput && (
-              <div className="bg-black/60 backdrop-blur-md rounded-2xl p-3 border border-white/5 flex flex-col gap-3 items-end">
-
-                {/* Amount Selector */}
-                <div className="flex gap-2 bg-black/40 p-1 rounded-xl">
-                  {[
-                    { label: 'MIN', val: minBet, color: 'green' },
-                    { label: 'MID', val: Math.floor((minBet + maxBet) / 2), color: 'blue' },
-                    { label: 'MAX', val: maxBet, color: 'red' }
-                  ].map((opt) => (
-                    <button
-                      key={opt.label}
-                      onClick={() => setSelectedBetAmount(opt.val)}
-                      className={`
-                                      w-10 h-8 md:w-14 md:h-10 rounded-lg flex flex-col items-center justify-center transition-all
-                                      ${selectedBetAmount === opt.val
-                          ? `bg-${opt.color}-600 text-white shadow-lg scale-105 ring-2 ring-${opt.color}-400`
-                          : `bg-gray-800 text-gray-400 hover:bg-gray-700`}
-                                  `}
-                    >
-                      <span className="text-[10px] font-bold">{opt.label}</span>
-                      <span className="text-[10px]">{formatChips(opt.val)}</span>
-                    </button>
-                  ))}
+              <button
+                onClick={() => handleBet(minBet)}
+                className="w-full md:w-auto h-12 md:h-14 px-8 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 rounded-full shadow-lg border-t border-green-400 flex items-center justify-center gap-3 transition-all hover:scale-105 active:scale-95"
+              >
+                <span className="text-white font-black text-lg md:text-xl tracking-wider">CHAAL</span>
+                <div className="bg-black/20 px-3 py-1 rounded-full text-sm font-mono text-green-100 border border-white/10">
+                  {formatChips(minBet)}
                 </div>
-
-                {/* Big Action Button */}
-                <button
-                  onClick={() => handleBet(selectedBetAmount || minBet)}
-                  className="w-full h-14 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 rounded-xl shadow-lg border-t border-green-400 flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
-                >
-                  <span className="text-white font-black text-xl tracking-wider">CHAAL</span>
-                  <div className="bg-black/20 px-2 py-1 rounded text-sm font-mono text-green-100">
-                    {formatChips(selectedBetAmount || minBet)}
-                  </div>
-                </button>
-              </div>
+              </button>
             )}
 
             {/* Blind See Cards */}
@@ -947,6 +949,53 @@ export default function GameRoom({ socket }) {
           </div>
         )
       }
+
+      {/* Showdown Overlay */}
+      {isShowdown && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-[100]">
+          <div className="relative w-full max-w-4xl mx-4">
+            <h2 className="text-center text-5xl font-black text-yellow-500 mb-12 tracking-widest drop-shadow-[0_0_10px_rgba(234,179,8,0.5)] animate-pulse">
+              SHOWDOWN
+            </h2>
+
+            <div className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-16">
+              {gameState.players.filter(p => !p.isFolded).map((player, idx) => (
+                <React.Fragment key={player.id}>
+                  {idx > 0 && (
+                    <div className="text-6xl font-black text-white/20 italic">VS</div>
+                  )}
+                  <div className="flex flex-col items-center gap-6 animate-in zoom-in duration-500">
+                    {/* Player Info */}
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="w-20 h-20 rounded-full bg-gradient-to-br from-gray-700 to-gray-900 border-2 border-yellow-500/50 flex items-center justify-center shadow-xl overflow-hidden">
+                        <img
+                          src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${player.name}`}
+                          alt={player.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <span className="text-2xl font-bold text-white">{player.name}</span>
+                    </div>
+
+                    {/* Cards */}
+                    <div className="flex gap-2">
+                      {allPlayerCards[player.id] && allPlayerCards[player.id].map((card, cIdx) => (
+                        <div key={cIdx} className="transform hover:scale-110 transition-transform duration-300">
+                          <PlayingCard
+                            rank={card.rank}
+                            suit={card.suit}
+                            className="w-24 h-36 md:w-32 md:h-48 shadow-2xl"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </React.Fragment>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Game Ended Overlay */}
       {

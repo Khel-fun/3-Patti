@@ -101,7 +101,13 @@ export default function PlayerSeat({
       {cards.length > 0 && (
         <div className={cn(
           "absolute flex gap-1 z-10 transition-all duration-300",
-          isHero ? "-top-32 scale-125" : "top-8 -right-12 scale-75"
+          // Dynamic positioning based on seat location
+          position === 'bottom' && "-top-32 left-1/2 -translate-x-1/2 scale-125", // Hero: Centered above
+          position === 'top' && "top-24 left-1/2 -translate-x-1/2 scale-75",      // Top: Centered below
+          position === 'left' && "top-0 -right-24 scale-75 origin-left",           // Left: To the right
+          position === 'right' && "top-0 -left-24 scale-75 origin-right flex-row-reverse", // Right: To the left (reversed for visual balance?) -> actually just to the left is fine.
+          // Fallback for any other case
+          !['bottom', 'top', 'left', 'right'].includes(position) && "-top-24 left-1/2 -translate-x-1/2 scale-75"
         )}>
           {cards.map((card, idx) => (
             <div key={idx} className={cn("shadow-2xl", isHero && "hover:-translate-y-4 transition-transform")}>
