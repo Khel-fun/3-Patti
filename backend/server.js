@@ -343,6 +343,7 @@ io.on("connection", (socket) => {
           name: winner.name,
         },
         pot: gameResult.pot,
+        playerChips: gameResult.playerChips, // Include all player chip counts
         gameState: game.getGameState(),
       });
 
@@ -425,6 +426,7 @@ io.on("connection", (socket) => {
             name: winner.name,
           },
           pot: gameResult.pot,
+          playerChips: gameResult.playerChips, // Include all player chip counts
           allCards, // Send again just in case
           reason: "Show",
           gameState: game.getGameState(),
@@ -476,6 +478,7 @@ io.on("connection", (socket) => {
             name: winner.name,
           },
           pot: gameResult.pot,
+          playerChips: gameResult.playerChips, // Include all player chip counts
           reason: "Player left",
           gameState: game.getGameState(),
         });
