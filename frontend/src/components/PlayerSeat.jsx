@@ -16,20 +16,19 @@ export default function PlayerSeat({
   const seatRef = useRef(null);
   const progressCircleRef = useRef(null);
 
-  // Animation for turn timer
+  // Animation for turn timer - fill overlay that reduces
   useEffect(() => {
     if (isCurrentPlayer && progressCircleRef.current) {
-      // Reset animation
+      // Start with full circle (0 offset) and animate to empty (239 offset - circumference of r=38)
       gsap.set(progressCircleRef.current, { strokeDashoffset: 0 });
-      // Animate to empty (251 is approx circumference of r=40)
       gsap.to(progressCircleRef.current, {
-        strokeDashoffset: 251,
+        strokeDashoffset: 239,
         duration: 15,
         ease: "linear"
       });
     } else if (progressCircleRef.current) {
       gsap.killTweensOf(progressCircleRef.current);
-      gsap.set(progressCircleRef.current, { strokeDashoffset: 0 });
+      gsap.set(progressCircleRef.current, { strokeDashoffset: 239 });
     }
   }, [isCurrentPlayer]);
 
@@ -46,34 +45,35 @@ export default function PlayerSeat({
     >
       {/* Avatar Container */}
       <div className="relative">
-        {/* Progress Ring (only visible when active turn) */}
-        {isCurrentPlayer && (
-          <svg className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-28 h-28 z-0 rotate-[-90deg]">
-            <circle
-              cx="56"
-              cy="56"
-              r="40"
-              fill="transparent"
-              stroke="#fbbf24" // yellow-400
-              strokeWidth="4"
-              strokeDasharray="251"
-              strokeDashoffset="0"
-              ref={progressCircleRef}
-              className="drop-shadow-[0_0_10px_rgba(251,191,36,0.5)]"
-            />
-          </svg>
-        )}
-
         {/* Avatar Circle */}
         <div className={cn(
           'w-20 h-20 rounded-full border-4 overflow-hidden relative z-10 flex items-center justify-center shadow-2xl',
-          isCurrentPlayer ? 'border-yellow-400' : 'border-gray-600',
-          'bg-gray-900'
+          isCurrentPlayer ? 'border-yellow-400 shadow-[0_0_20px_rgba(251,191,36,0.8)]' : 'border-gray-600',
+          'bg-gray-900',
+          'transition-all duration-300'
         )}>
           {/* Placeholder Avatar Image or Initial */}
           <div className="bg-gradient-to-br from-gray-800 to-black w-full h-full flex items-center justify-center">
             <User className="w-10 h-10 text-gray-400" />
           </div>
+
+          {/* Timer Overlay - Transparent Yellow Circle that reduces */}
+          {isCurrentPlayer && (
+            <svg className="absolute inset-0 w-full h-full z-10 rotate-[-90deg]">
+              <circle
+                cx="40"
+                cy="40"
+                r="38"
+                fill="rgba(251, 191, 36, 0.01)"
+                stroke="rgba(251, 191, 36, 0.4)"
+                strokeWidth="76"
+                strokeDasharray="239"
+                strokeDashoffset="0"
+                ref={progressCircleRef}
+                className="drop-shadow-[0_0_15px_rgba(251,191,36,0.6)]"
+              />
+            </svg>
+          )}
 
           {/* Dealer Button */}
           {isDealer && (
