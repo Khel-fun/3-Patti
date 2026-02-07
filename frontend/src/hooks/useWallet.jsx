@@ -69,15 +69,18 @@ export function WalletProvider({ children }) {
     }
   };
 
+  // Only return valid account if actually connected with proper address
+  const hasValidConnection = isConnected && address && typeof address === 'string' && address.startsWith('0x');
+
   const value = {
-    account: address,
+    account: hasValidConnection ? address : null,
     provider,
     signer,
     chainId: chain?.id,
     balance: balanceData ? ethers.formatEther(balanceData.value) : '0',
     isConnecting: false,
     error: null,
-    isConnected,
+    isConnected: hasValidConnection, 
     connectWallet: () => {}, // Handled by wagmi useConnect
     disconnectWallet: () => {}, // Handled by wagmi useDisconnect
     switchNetwork,
