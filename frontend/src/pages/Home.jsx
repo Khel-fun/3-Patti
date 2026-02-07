@@ -10,6 +10,10 @@ import {
   Coins,
   Play,
   Crown,
+  ChevronDown,
+  Activity,
+  Lock,
+  ArrowRight
 } from "lucide-react";
 import Button from "@/components/Button";
 import WalletConnect from "@/components/WalletConnect";
@@ -18,6 +22,7 @@ import BuyTokensModal from "@/components/BuyTokensModal";
 import CreateRoomModal from "@/components/CreateRoomModal";
 import JoinRoomModal from "@/components/JoinRoomModal";
 import { useWallet } from "@/hooks/useWallet.jsx";
+import { cn } from "@/lib/utils";
 
 export default function Home({ socket }) {
   const navigate = useNavigate();
@@ -58,350 +63,305 @@ export default function Home({ socket }) {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      {/* Blurred Background Image */}
-      <div
-        className="absolute inset-0 bg-[url('/background.jpg')] bg-cover bg-center bg-no-repeat"
-        style={{ filter: "blur(8px)", transform: "scale(1.1)" }}
-      ></div>
+    <div className="min-h-screen relative overflow-hidden bg-black text-white font-sans selection:bg-white/20">
 
-      {/* Dark Overlay */}
-      <div className="absolute inset-0 bg-black/40"></div>
+      {/* Dynamic Background */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-[-20%] left-[20%] w-[60%] h-[60%] bg-blue-500/5 rounded-full blur-[150px] animate-pulse delay-1000"></div>
+        <div className="absolute bottom-[-10%] right-[-5%] w-[40%] h-[40%] bg-purple-500/5 rounded-full blur-[120px] animate-pulse delay-700"></div>
 
-      {/* Animated Background Elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-purple-600/10 rounded-full blur-3xl animate-pulse"></div>
-        <div
-          className="absolute bottom-20 right-10 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl animate-pulse"
-          style={{ animationDelay: "1s" }}
-        ></div>
-        <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-yellow-600/5 rounded-full blur-3xl animate-pulse"
-          style={{ animationDelay: "2s" }}
-        ></div>
+        {/* Mesh Grid */}
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:50px_50px] [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_100%)]"></div>
       </div>
 
       {/* Navbar */}
-      <nav className="relative z-20 bg-black/30 backdrop-blur-md border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo/Brand */}
-            <div className="flex items-center">
-              {/* <div className=" w-14 rounded-lg">
-                <img src="logo.png" className='w-10 h-10'/>
-              </div> */}
-              <h1 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-yellow-200 to-yellow-400">
+      <nav className="relative z-50 border-b border-white/5 bg-black/60 backdrop-blur-xl supports-[backdrop-filter]:bg-black/40">
+        <div className="max-w-7xl mx-auto px-6 h-24 flex items-center justify-between">
+          <div className="flex items-center gap-4 group cursor-pointer">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-100 to-gray-400 flex items-center justify-center shadow-[0_0_25px_rgba(255,255,255,0.1)] group-hover:scale-105 transition-transform duration-500 relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-shine" />
+              <Crown className="w-6 h-6 text-black fill-current drop-shadow-md" />
+            </div>
+            <div className="flex flex-col">
+              <h1 className="text-2xl font-black tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-b from-white via-gray-200 to-gray-500 font-display leading-none">
                 TEEN PATTI
               </h1>
+              <span className="text-[10px] uppercase tracking-[0.4em] text-gray-500 font-bold ml-1 mt-1 group-hover:text-white transition-colors duration-300">
+                Premium Edition
+              </span>
             </div>
+          </div>
 
-            {/* Wallet Connect */}
-            <div className="flex items-center gap-4">
-              <WalletConnect />
+          <div className="flex items-center gap-8">
+            <div className="hidden lg:flex items-center gap-8 text-xs font-bold tracking-widest text-gray-500 uppercase">
+              {['Tournaments', 'Leaderboard', 'VIP Club'].map((item) => (
+                <a key={item} href="#" className="hover:text-white transition-colors relative group py-2">
+                  {item}
+                  <span className="absolute bottom-0 left-0 w-0 h-[1px] bg-white group-hover:w-full transition-all duration-3000 ease-out" />
+                </a>
+              ))}
             </div>
+            <div className="h-8 w-px bg-white/10 hidden lg:block"></div>
+            <WalletConnect />
           </div>
         </div>
       </nav>
 
-      <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
-        <div className="max-w-6xl w-full">
-          {/* Header with Casino Style */}
-          <div className="text-center mb-4">
-            <div className="relative inline-block">
-              <div className="flex items-center justify-center gap-4 mb-2">
-                <h1 className="text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-yellow-200 to-yellow-400 drop-shadow-[0_0_30px_rgba(250,204,21,0.5)]">
-                  TEEN PATTI
-                </h1>
-              </div>
+      {/* Main Content */}
+      <main className="relative z-10 container mx-auto px-4 py-20 flex flex-col items-center min-h-[calc(100vh-96px)]">
 
-              <div className="relative">
-                <p className="text-2xl font-bold text-white">
-                  🎰 The Ultimate Card Game Experience 🎰
-                </p>
-                <p className="text-lg text-purple-300 mt-2 font-semibold">
-                  Play • Win • Dominate
-                </p>
-              </div>
-            </div>
+        {/* Hero Section */}
+        <div className="text-center max-w-5xl mx-auto mb-24 relative">
+
+          {/* New Tag */}
+          <div className="inline-flex items-center gap-3 pl-3 pr-4 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md mb-10 hover:bg-white/10 transition-colors cursor-default group">
+            <span className="flex items-center justify-center px-1.5 py-0.5 rounded bg-gradient-to-r from-yellow-500 to-amber-600 text-[10px] font-black text-black uppercase tracking-wider shadow-lg shadow-yellow-500/20">
+              New
+            </span>
+            <span className="text-xs font-bold tracking-widest uppercase text-gray-300 group-hover:text-white transition-colors">
+              The Next Gen Experience
+            </span>
+            <ChevronDown className="w-3 h-3 text-gray-500 -rotate-90" />
           </div>
 
-          <div className="font-bold text-white text-xl underline mb-5 underline-offset-4">
-            Features
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
-            <div className="group relative bg-gradient-to-br from-blue-600/20 to-blue-800/20 backdrop-blur-md rounded-2xl p-6 border border-blue-500/30 hover:border-blue-400/60 transition-all duration-300 hover:scale-105 hover:shadow-[0_0_30px_rgba(59,130,246,0.3)]">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-400/0 to-blue-600/0 group-hover:from-blue-400/10 group-hover:to-blue-600/10 rounded-2xl transition-all duration-300"></div>
-              <div className="relative">
-                <div className="bg-blue-500/20 w-16 h-16 rounded-xl flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition-transform">
-                  <Users className="w-8 h-8 text-blue-400" />
+          {/* Main Title */}
+          <h1 className="text-7xl md:text-9xl font-black mb-8 tracking-tighter relative z-10">
+            <span className="bg-clip-text text-transparent bg-gradient-to-b from-white via-gray-200 to-gray-600 drop-shadow-2xl">
+              TEEN PATTI
+            </span>
+          </h1>
+
+          <p className="text-xl md:text-2xl text-gray-400 font-light max-w-2xl mx-auto mb-16 leading-relaxed">
+            High-stakes poker on the <span className="text-white font-medium">blockchain</span>.
+            <br className="hidden md:block" />
+            Proven fair. Infinitely scalable.
+          </p>
+
+          {!isConnected ? (
+            <div className="flex flex-col items-center gap-8 animate-fade-in-up">
+              <div className="glass-panel p-1 rounded-2xl max-w-md w-full mx-auto relative group">
+                <div className="absolute inset-0 bg-gradient-to-b from-blue-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl blur-xl" />
+                <div className="bg-black/80 rounded-xl p-8 border border-white/5 relative z-10 flex flex-col items-center">
+                  <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4 border border-white/10 group-hover:border-white/30 transition-colors">
+                    <Shield className="w-8 h-8 text-gray-300" />
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-2">Authentication Required</h3>
+                  <p className="text-gray-400 text-sm mb-6 text-center">Connect your secure wallet to access the premium tables and start winning.</p>
+                  <div className="w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mb-6" />
+                  <span className="text-[10px] font-bold text-gray-600 uppercase tracking-[0.2em] mb-2">Secure Connection</span>
                 </div>
-                <h3 className="text-white font-bold text-lg mb-2">
-                  Multiplayer
-                </h3>
-                <p className="text-blue-200 text-sm">2-6 Players</p>
               </div>
             </div>
+          ) : (
+            <div className="grid md:grid-cols-2 gap-8 w-full max-w-4xl mx-auto animate-fade-in-up px-4">
 
-            <div className="group relative bg-gradient-to-br from-yellow-600/20 to-yellow-800/20 backdrop-blur-md rounded-2xl p-6 border border-yellow-500/30 hover:border-yellow-400/60 transition-all duration-300 hover:scale-105 hover:shadow-[0_0_30px_rgba(250,204,21,0.3)]">
-              <div className="absolute inset-0 bg-gradient-to-br from-yellow-400/0 to-yellow-600/0 group-hover:from-yellow-400/10 group-hover:to-yellow-600/10 rounded-2xl transition-all duration-300"></div>
-              <div className="relative">
-                <div className="bg-yellow-500/20 w-16 h-16 rounded-xl flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition-transform">
-                  <Trophy className="w-8 h-8 text-yellow-400" />
-                </div>
-                <h3 className="text-white font-bold text-lg mb-2">
-                  Real-time
-                </h3>
-                <p className="text-yellow-200 text-sm">Live Sync</p>
-              </div>
-            </div>
-
-            <div className="group relative bg-gradient-to-br from-purple-600/20 to-purple-800/20 backdrop-blur-md rounded-2xl p-6 border border-purple-500/30 hover:border-purple-400/60 transition-all duration-300 hover:scale-105 hover:shadow-[0_0_30px_rgba(168,85,247,0.3)]">
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-400/0 to-purple-600/0 group-hover:from-purple-400/10 group-hover:to-purple-600/10 rounded-2xl transition-all duration-300"></div>
-              <div className="relative">
-                <div className="bg-purple-500/20 w-16 h-16 rounded-xl flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition-transform">
-                  <Zap className="w-8 h-8 text-purple-400" />
-                </div>
-                <h3 className="text-white font-bold text-lg mb-2">
-                  Fast Paced
-                </h3>
-                <p className="text-purple-200 text-sm">Quick Games</p>
-              </div>
-            </div>
-
-            <div className="group relative bg-gradient-to-br from-green-600/20 to-green-800/20 backdrop-blur-md rounded-2xl p-6 border border-green-500/30 hover:border-green-400/60 transition-all duration-300 hover:scale-105 hover:shadow-[0_0_30px_rgba(34,197,94,0.3)]">
-              <div className="absolute inset-0 bg-gradient-to-br from-green-400/0 to-green-600/0 group-hover:from-green-400/10 group-hover:to-green-600/10 rounded-2xl transition-all duration-300"></div>
-              <div className="relative">
-                <div className="bg-green-500/20 w-16 h-16 rounded-xl flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition-transform">
-                  <Shield className="w-8 h-8 text-green-400" />
-                </div>
-                <h3 className="text-white font-bold text-lg mb-2">Secure</h3>
-                <p className="text-green-200 text-sm">Blockchain</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="relative bg-gradient-to-br from-slate-800/40 to-slate-900/40 backdrop-blur-lg rounded-3xl border border-white/10 shadow-2xl overflow-hidden mb-8">
-            {/* Decorative gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-br from-purple-600/5 via-transparent to-blue-600/5 pointer-events-none"></div>
-
-            <div className="relative p-8">
-              <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold text-white mb-2">
-                  Ready to Play?
-                </h2>
-                <p className="text-gray-400">Choose your path to victory</p>
-              </div>
-
-              {/* Wallet Connection Required */}
-              {!isConnected ? (
-                <div className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/30 backdrop-blur-sm text-white px-6 py-4 rounded-2xl text-center">
-                  <Shield className="w-12 h-12 mx-auto mb-3 text-blue-400" />
-                  <p className="font-bold text-lg mb-2">Connect Your Wallet</p>
-                  <p className="text-sm text-gray-300">
-                    Secure blockchain authentication required to play
-                  </p>
-                </div>
-              ) : (
-                <>
-                  {/* Error Message */}
-                  {error && (
-                    <div className="bg-red-600/20 border border-red-500/50 backdrop-blur-sm text-red-200 px-4 py-3 rounded-xl mb-6">
-                      {error}
-                    </div>
-                  )}
-
-                  <div className="grid md:grid-cols-2 gap-6">
-                    {/* Create Room Card */}
-                    <div className="group relative bg-gradient-to-br from-blue-600/10 to-blue-800/10 rounded-2xl p-6 border border-blue-500/30 hover:border-blue-400/60 transition-all duration-300 hover:shadow-[0_0_30px_rgba(59,130,246,0.2)]">
-                      <div className="absolute inset-0 bg-gradient-to-br from-blue-400/10 to-blue-600/10 group-hover:from-blue-400/5 group-hover:to-blue-600/5 rounded-2xl transition-all duration-300"></div>
-                      <div className="relative">
-                        <div className="flex items-center justify-center mb-4">
-                          <div className="bg-blue-500/20 p-4 rounded-xl">
-                            <Play className="w-10 h-10 text-blue-400" />
-                          </div>
-                        </div>
-                        <h3 className="text-xl font-bold text-white mb-2 text-center">Create Room</h3>
-                        <p className="text-sm text-gray-400 mb-4 text-center">Start a new game on the blockchain</p>
-                        <Button
-                          onClick={() => setShowCreateRoom(true)}
-                          disabled={!isConnected}
-                          className="w-full"
-                          size="lg"
-                        >
-                          <Gamepad2 className="w-5 h-5" />
-                          Create New Game
-                        </Button>
-                        <p className="text-xs text-gray-500 text-center mt-3">
-                          💎 Set your buy-in and max players
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Join Room Card */}
-                    <div className="group relative bg-gradient-to-br from-purple-600/10 to-purple-800/10 rounded-2xl p-6 border border-purple-500/30 hover:border-purple-400/60 transition-all duration-300 hover:shadow-[0_0_30px_rgba(168,85,247,0.2)]">
-                      <div className="absolute inset-0 bg-gradient-to-br from-purple-400/10 to-purple-600/10 group-hover:from-purple-400/5 group-hover:to-purple-600/5 rounded-2xl transition-all duration-300"></div>
-                      <div className="relative">
-                        <div className="flex items-center justify-center mb-4">
-                          <div className="bg-purple-500/20 p-4 rounded-xl">
-                            <Users className="w-10 h-10 text-purple-400" />
-                          </div>
-                        </div>
-                        <h3 className="text-xl font-bold text-white mb-2 text-center">Join Room</h3>
-                        <p className="text-sm text-gray-400 mb-4 text-center">Enter an existing game room</p>
-                        <Button
-                          onClick={() => setShowJoinRoom(true)}
-                          disabled={!isConnected}
-                          variant="secondary"
-                          className="w-full"
-                          size="lg"
-                        >
-                          <Users className="w-5 h-5" />
-                          Join Existing Game
-                        </Button>
-                        <p className="text-xs text-gray-500 text-center mt-3">
-                          🎯 Enter room ID to join
-                        </p>
+              {/* Create Room Card */}
+              <div className="group relative silver-border rounded-3xl p-[1px] transition-transform duration-300 hover:-translate-y-2">
+                <div className="absolute inset-0 bg-white/5 blur-2xl opacity-0 group-hover:opacity-30 transition-opacity duration-500"></div>
+                <div className="relative h-full bg-[#050505] rounded-[23px] overflow-hidden flex flex-col">
+                  {/* Card Header Image/Design */}
+                  <div className="h-32 bg-gradient-to-b from-gray-800 to-black relative overflow-hidden">
+                    <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.1]" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-20 h-20 rounded-full bg-white/5 border border-white/10 flex items-center justify-center backdrop-blur-md shadow-[0_0_30px_rgba(255,255,255,0.1)]">
+                        <Play className="w-8 h-8 text-white fill-current ml-1" />
                       </div>
                     </div>
                   </div>
-                </>
-              )}
-              <div className="flex justify-between items-end mt-5">
-                {isConnected && (
-                  <div className="flex items-center gap-3 flex-wrap justify-center">
-                    <TokenBalance />
+
+                  {/* Card Content */}
+                  <div className="p-8 flex flex-col flex-1 items-center text-center">
+                    <h3 className="text-3xl font-bold text-white mb-2 tracking-tight">Create Table</h3>
+                    <p className="text-gray-400 text-sm mb-8 leading-relaxed">
+                      Host a private high-stakes game. <br /> Set your rules. Control the pot.
+                    </p>
                     <Button
-                      onClick={() => setShowBuyTokens(true)}
-                      className="text-sm bg-gradient-to-r from-yellow-600 to-orange-600"
+                      onClick={() => setShowCreateRoom(true)}
+                      className="w-full mt-auto bg-white/10 hover:bg-white/20 border-white/30"
+                      size="lg"
                     >
-                      <Coins className="w-4 h-4" />
-                      Buy Tokens
+                      Start Hosting
                     </Button>
                   </div>
-                )}
-
-                {/* Connection Status */}
-                <div className="mt-6 text-center">
-                  {socket ? (
-                    <div className="inline-flex items-center gap-2 bg-green-600/20 border border-green-500/30 px-4 py-2 rounded-full">
-                      <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-                      <span className="text-green-300 text-sm font-semibold">
-                        Server Connected
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="inline-flex items-center gap-2 bg-red-600/20 border border-red-500/30 px-4 py-2 rounded-full">
-                      <span className="w-2 h-2 bg-red-400 rounded-full"></span>
-                      <span className="text-red-300 text-sm font-semibold">
-                        Connecting...
-                      </span>
-                    </div>
-                  )}
                 </div>
               </div>
+
+              {/* Join Room Card */}
+              <div className="group relative silver-border rounded-3xl p-[1px] transition-transform duration-300 hover:-translate-y-2">
+                <div className="absolute inset-0 bg-white/5 blur-2xl opacity-0 group-hover:opacity-30 transition-opacity duration-500"></div>
+                <div className="relative h-full bg-[#050505] rounded-[23px] overflow-hidden flex flex-col">
+                  {/* Card Header Image/Design */}
+                  <div className="h-32 bg-gradient-to-b from-slate-900 to-black relative overflow-hidden">
+                    <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.1]" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-20 h-20 rounded-full bg-white/5 border border-white/10 flex items-center justify-center backdrop-blur-md shadow-[0_0_30px_rgba(255,255,255,0.1)]">
+                        <Users className="w-8 h-8 text-white fill-current" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card Content */}
+                  <div className="p-8 flex flex-col flex-1 items-center text-center">
+                    <h3 className="text-3xl font-bold text-white mb-2 tracking-tight">Join Table</h3>
+                    <p className="text-gray-400 text-sm mb-8 leading-relaxed">
+                      Enter a unique Room ID to join <br /> live action instantly.
+                    </p>
+                    <Button
+                      onClick={() => setShowJoinRoom(true)}
+                      variant="secondary"
+                      className="w-full mt-auto"
+                      size="lg"
+                    >
+                      Enter Room ID
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
             </div>
+          )}
+
+          {/* Quick Stats Bar */}
+          {isConnected && (
+            <div className="mt-16 flex flex-wrap justify-center gap-6 animate-fade-in-up items-center">
+              <div className="glass-panel rounded-full pl-2 pr-6 py-2 flex items-center gap-4">
+                <TokenBalance />
+                <div className="h-8 w-px bg-white/10" />
+                <Button
+                  onClick={() => setShowBuyTokens(true)}
+                  variant="ghost"
+                  className="rounded-full px-4 h-8 text-xs hover:bg-white/10 border border-white/5"
+                >
+                  <Coins className="w-3 h-3 mr-2 text-yellow-500" />
+                  Acquire Chips
+                </Button>
+              </div>
+
+              <div className={cn(
+                "px-6 py-3 rounded-full border backdrop-blur-md text-[10px] font-black tracking-[0.2em] uppercase flex items-center gap-3 transition-colors",
+                socket
+                  ? "bg-green-500/5 border-green-500/20 text-green-400"
+                  : "bg-red-500/5 border-red-500/20 text-red-500"
+              )}>
+                <div className="relative">
+                  <div className={cn("w-2 h-2 rounded-full", socket ? "bg-green-400" : "bg-red-500")}></div>
+                  {socket && <div className="absolute inset-0 bg-green-400 rounded-full animate-ping opacity-75"></div>}
+                </div>
+                {socket ? 'System Online' : 'Reconnecting...'}
+              </div>
+            </div>
+          )}
+
+        </div>
+
+        {/* Features Grid - Glass Blocks */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 w-full max-w-6xl mb-32 px-4">
+          {[
+            { icon: Users, title: "Multiplayer", desc: "Real-time 2-6 Player Tables" },
+            { icon: Zap, title: "Instant Action", desc: "Zero Latency Gameplay" },
+            { icon: Trophy, title: "Ranked Play", desc: "Global Leaderboards" },
+            { icon: Lock, title: "Secure", desc: "Blockchain Verified" }
+          ].map((feature, i) => (
+            <div key={i} className="group p-8 rounded-3xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] hover:border-white/10 transition-all duration-300 backdrop-blur-sm relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-[80px] -mr-16 -mt-16 group-hover:bg-white/10 transition-colors" />
+              <feature.icon className="w-10 h-10 text-gray-500 mb-6 group-hover:text-white transition-colors relative z-10" />
+              <h4 className="text-xl font-bold text-white mb-2 relative z-10 font-display tracking-tight">{feature.title}</h4>
+              <p className="text-gray-500 text-sm leading-relaxed relative z-10">{feature.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* How to Play - Industrial Accordion */}
+        <div className="w-full max-w-4xl mb-20 px-4">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-black text-gray-700 uppercase tracking-[0.5em]">Game Manual</h2>
           </div>
 
-          {/* How to Play - Accordion Style */}
-          <details className="group bg-gradient-to-br from-slate-800/60 to-slate-900/60 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
-            <summary className="cursor-pointer p-6 text-white font-bold text-xl flex items-center justify-between hover:bg-white/5 transition-colors">
-              <span className="flex items-center gap-3">
-                <Trophy className="w-6 h-6 text-yellow-400" />
-                How to Play Teen Patti
-              </span>
-              <span className="text-2xl group-open:rotate-180 transition-transform">
-                ▼
-              </span>
-            </summary>
-            <div className="p-6 pt-0 text-gray-300 space-y-4">
-              <div className="bg-blue-600/10 border border-blue-500/20 rounded-xl p-4">
-                <p className="font-semibold text-blue-300 mb-2">
-                  🎯 Objective:
-                </p>
-                <p className="text-sm">
-                  Have the best 3-card hand or be the last player standing.
-                </p>
-              </div>
+          <div className="border border-white/10 rounded-3xl overflow-hidden bg-[#050505]">
+            <details className="group open:bg-black/40 transition-colors duration-300">
+              <summary className="flex items-center justify-between p-8 cursor-pointer hover:bg-white/5 transition-colors list-none select-none">
+                <div className="flex items-center gap-6">
+                  <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
+                    <Activity className="w-5 h-5 text-gray-400" />
+                  </div>
+                  <div>
+                    <span className="block text-xl font-bold text-white tracking-wide">Rules & Strategy</span>
+                    <span className="text-sm text-gray-500">Master the basics of Teen Patti</span>
+                  </div>
+                </div>
+                <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center group-open:bg-white/10 group-open:rotate-180 transition-all duration-300">
+                  <ChevronDown className="w-5 h-5 text-gray-400" />
+                </div>
+              </summary>
 
-              <div className="bg-yellow-600/10 border border-yellow-500/20 rounded-xl p-4">
-                <p className="font-semibold text-yellow-300 mb-3">
-                  🏆 Hand Rankings (High to Low):
-                </p>
-                <ul className="space-y-2 text-sm">
-                  <li className="flex items-start gap-2">
-                    <span className="text-yellow-400 font-bold">1.</span>
-                    <span>
-                      <strong className="text-white">Trio/Trail</strong> - Three
-                      cards of same rank (AAA is highest)
-                    </span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-yellow-400 font-bold">2.</span>
-                    <span>
-                      <strong className="text-white">Pure Sequence</strong> -
-                      Three consecutive cards of same suit
-                    </span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-yellow-400 font-bold">3.</span>
-                    <span>
-                      <strong className="text-white">Sequence</strong> - Three
-                      consecutive cards of different suits
-                    </span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-yellow-400 font-bold">4.</span>
-                    <span>
-                      <strong className="text-white">Color/Flush</strong> -
-                      Three cards of same suit
-                    </span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-yellow-400 font-bold">5.</span>
-                    <span>
-                      <strong className="text-white">Pair</strong> - Two cards
-                      of same rank
-                    </span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-yellow-400 font-bold">6.</span>
-                    <span>
-                      <strong className="text-white">High Card</strong> -
-                      Highest single card wins
-                    </span>
-                  </li>
-                </ul>
-              </div>
+              <div className="px-8 pb-10 pt-2 grid gap-8 border-t border-white/5 relative">
+                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none" />
 
-              <div className="bg-purple-600/10 border border-purple-500/20 rounded-xl p-4">
-                <p className="font-semibold text-purple-300 mb-2">
-                  🎮 Gameplay:
-                </p>
-                <p className="text-sm">
-                  Players can play <strong className="text-white">blind</strong>{" "}
-                  (without seeing cards) or{" "}
-                  <strong className="text-white">seen</strong> (after viewing).
-                  Blind players bet half the amount of seen players. Continue
-                  betting until only one player remains or players show their
-                  cards.
-                </p>
+                {/* Hand Rankings */}
+                <div className="relative z-10">
+                  <h5 className="flex items-center gap-3 text-sm font-bold text-gray-400 uppercase tracking-widest mb-6">
+                    <Trophy className="w-4 h-4 text-yello-500" />
+                    Winning Hands
+                  </h5>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {[
+                      { rank: "1", title: "Trail (Trio)", desc: "Three of a kind (AAA highest)" },
+                      { rank: "2", title: "Pure Sequence", desc: "Straight Flush" },
+                      { rank: "3", title: "Sequence", desc: "Straight" },
+                      { rank: "4", title: "Color", desc: "Flush" },
+                      { rank: "5", title: "Pair", desc: "Two of a kind" },
+                    ].map((hand, idx) => (
+                      <div key={idx} className="flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
+                        <span className="text-2xl font-black text-white/10">{hand.rank}</span>
+                        <div>
+                          <div className="font-bold text-white">{hand.title}</div>
+                          <div className="text-xs text-gray-500">{hand.desc}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Play Styles */}
+                <div className="grid md:grid-cols-2 gap-6 relative z-10">
+                  <div className="p-6 rounded-2xl bg-gradient-to-br from-indigo-500/5 to-transparent border border-white/5">
+                    <h5 className="text-white font-bold mb-2 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-indigo-500"></span> Blind Play
+                    </h5>
+                    <p className="text-sm text-gray-400 leading-relaxed">Bet without seeing cards. Moves cost 50% less.</p>
+                  </div>
+                  <div className="p-6 rounded-2xl bg-gradient-to-br from-emerald-500/5 to-transparent border border-white/5">
+                    <h5 className="text-white font-bold mb-2 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500"></span> Seen Play
+                    </h5>
+                    <p className="text-sm text-gray-400 leading-relaxed">View your cards before betting. Regular stakes apply.</p>
+                  </div>
+                </div>
               </div>
-            </div>
-          </details>
+            </details>
+          </div>
         </div>
-      </div>
 
-      {/* Buy Tokens Modal */}
+        {/* Footer */}
+        <footer className="w-full text-center py-12 border-t border-white/5 relative z-10">
+          <div className="flex items-center justify-center gap-2 mb-4 opacity-50">
+            <Crown className="w-4 h-4" />
+            <span className="font-black tracking-widest">KHEL.FUN</span>
+          </div>
+          <p className="text-[10px] font-bold tracking-[0.2em] text-gray-600 uppercase">© 2026 All rights reserved.</p>
+        </footer>
+
+      </main>
+
+      {/* Modals */}
       <BuyTokensModal
         isOpen={showBuyTokens}
         onClose={() => setShowBuyTokens(false)}
         onSuccess={() => {
           setShowBuyTokens(false);
-          // Token balance will auto-refresh
         }}
       />
 
-      {/* Create Room Modal */}
       <CreateRoomModal
         isOpen={showCreateRoom}
         onClose={() => setShowCreateRoom(false)}
@@ -409,13 +369,13 @@ export default function Home({ socket }) {
         socket={socket}
       />
 
-      {/* Join Room Modal */}
       <JoinRoomModal
         isOpen={showJoinRoom}
         onClose={() => setShowJoinRoom(false)}
         onSuccess={handleJoinRoomSuccess}
         socket={socket}
       />
+
     </div>
   );
 }
