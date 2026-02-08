@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { User, Crown } from 'lucide-react';
+import { User, Crown, X, Trophy } from 'lucide-react';
 import { cn, formatChips } from '@/lib/utils';
 import PlayingCard from './PlayingCard';
 import gsap from 'gsap';
@@ -10,124 +10,187 @@ export default function PlayerSeat({
   isDealer,
   cards = [],
   showCards = false,
-  position = 'bottom',
+  position = 'bottom', // 'bottom' (hero), 'top', 'left', 'right', 'top-left', 'top-right', 'bottom-left', 'bottom-right'
   className
 }) {
-  const seatRef = useRef(null);
   const progressCircleRef = useRef(null);
 
-  // Animation for turn timer - fill overlay that reduces
+  // Timer Animation
   useEffect(() => {
     if (isCurrentPlayer && progressCircleRef.current) {
-      // Start with full circle (0 offset) and animate to empty (239 offset - circumference of r=38)
-      gsap.set(progressCircleRef.current, { strokeDashoffset: 0 });
-      gsap.to(progressCircleRef.current, {
-        strokeDashoffset: 239,
-        duration: 15,
-        ease: "linear"
-      });
-    } else if (progressCircleRef.current) {
+      const circumference = 2 * Math.PI * 46; // r=46
+      gsap.fromTo(progressCircleRef.current,
+        { strokeDashoffset: 0 },
+        { strokeDashoffset: circumference, duration: 15, ease: "linear" }
+      );
+    } else {
       gsap.killTweensOf(progressCircleRef.current);
-      gsap.set(progressCircleRef.current, { strokeDashoffset: 239 });
     }
   }, [isCurrentPlayer]);
 
   const isHero = position === 'bottom';
+  const isFolded = player.isFolded;
+  const isWinner = player.isWinner;
 
   return (
-    <div
-      ref={seatRef}
-      className={cn(
-        'player-seat relative flex flex-col items-center gap-2',
-        player.isFolded && 'opacity-50 grayscale',
-        className
-      )}
-    >
-      {/* Avatar Container */}
-      <div className="relative">
-        {/* Avatar Circle */}
-        <div className={cn(
-          'w-20 h-20 rounded-full border-4 overflow-hidden relative z-10 flex items-center justify-center shadow-2xl',
-          isCurrentPlayer ? 'border-yellow-400 shadow-[0_0_20px_rgba(251,191,36,0.8)]' : 'border-gray-600',
-          'bg-gray-900',
-          'transition-all duration-300'
-        )}>
-          {/* Placeholder Avatar Image or Initial */}
-          <div className="bg-gradient-to-br from-gray-800 to-black w-full h-full flex items-center justify-center">
-            <User className="w-10 h-10 text-gray-400" />
-          </div>
+    <div className={cn('relative group flex flex-col items-center justify-center', className)}>
 
-          {/* Timer Overlay - Transparent Yellow Circle that reduces */}
-          {isCurrentPlayer && (
-            <svg className="absolute inset-0 w-full h-full z-10 rotate-[-90deg]">
-              <circle
-                cx="40"
-                cy="40"
-                r="38"
-                fill="rgba(251, 191, 36, 0.01)"
-                stroke="rgba(251, 191, 36, 0.4)"
-                strokeWidth="76"
-                strokeDasharray="239"
-                strokeDashoffset="0"
-                ref={progressCircleRef}
-                className="drop-shadow-[0_0_15px_rgba(251,191,36,0.6)]"
-              />
-            </svg>
-          )}
-
-          {/* Dealer Button */}
-          {isDealer && (
-            <div className="absolute top-0 right-0 bg-white text-black rounded-full w-6 h-6 flex items-center justify-center font-bold text-xs border border-yellow-500 shadow-md z-20">
-              D
-            </div>
-          )}
-        </div>
-
-        {/* Status Badge (Folded) */}
-        {player.isFolded && (
-          <div className="absolute inset-0 z-20 flex items-center justify-center rounded-full bg-black/70">
-            <span className="text-white font-bold text-xs">FOLD</span>
-          </div>
-        )}
-      </div>
-
-      {/* Player Info (Name & Chips) */}
-      <div className="z-20 bg-black/80 backdrop-blur-md border border-gray-600 rounded-lg px-3 py-1 text-center min-w-[100px] shadow-lg -mt-4">
-        <div className="text-white font-bold text-sm truncate max-w-[90px]">{player.name}</div>
-        <div className="text-yellow-400 text-xs font-mono">{formatChips(player.chips)}</div>
-      </div>
-
-      {/* Cards */}
-      {cards.length > 0 && (
-        <div className={cn(
-          "absolute flex gap-0.5 md:gap-1 transition-all duration-300",
-          // Dynamic positioning based on seat location
-          // Hero: Cards just above avatar, closer positioning
-          position === 'bottom' && "-top-24 md:-top-28 left-1/2 -translate-x-1/2 scale-90 md:scale-100 z-20",
-          // Other positions: Cards below avatar
-          position === 'top' && "top-16 md:top-18 left-1/2 -translate-x-1/2 scale-60 md:scale-40 z-0",
-          position === 'left' && "top-12 md:top-14 -right-16 md:-right-20 scale-60 md:scale-40 origin-left z-0",
-          position === 'right' && "top-12 md:top-32 -left-16 md:-left-20 scale-60 md:scale-40 origin-right flex-row-reverse z-0",
-          // Fallback for any other case
-          !['bottom', 'top', 'left', 'right'].includes(position) && "-top-24 left-1/2 -translate-x-1/2 scale-70 z-0"
-        )}>
-          {cards.map((card, idx) => (
-            <div key={idx} className={cn("shadow-2xl", isHero && "hover:-translate-y-2 transition-transform")}>
+      {/* Cards Container - Positioned relative to avatar */}
+      <div className={cn(
+        "absolute flex items-center justify-center transition-all duration-500 z-0 perspective-[1000px]",
+        // Hero: Cards larger, above avatar
+        isHero && "bottom-[85%] mb-4 scale-100 gap-[-15px] hover:translate-y-[-10px]",
+        // Opponents: Cards smaller, positioned based on seat
+        position.includes('top') && "top-[85%] mt-4 scale-75",
+        position.includes('left') && "left-[85%] ml-4 scale-75 origin-left",
+        position.includes('right') && "right-[85%] mr-4 scale-75 origin-right",
+      )}>
+        {cards.map((card, idx) => (
+          <div
+            key={idx}
+            className={cn(
+              "relative transition-all duration-300",
+              isHero ? "shadow-[0_10px_30px_rgba(0,0,0,0.5)]" : "shadow-lg",
+              idx > 0 && "-ml-8 md:-ml-12" // Overlap cards
+            )}
+            style={{
+              transform: `rotate(${(idx - 1) * 5}deg) translateY(${Math.abs(idx - 1) * 2}px)`,
+              zIndex: idx
+            }}
+          >
+            {/* If we have card data (hero or showdown), render it. Otherwise render card back */}
+            {(card.rank || showCards) ? (
               <PlayingCard
-                rank={showCards || isHero ? card.rank : null}
-                suit={showCards || isHero ? card.suit : null}
-                faceDown={!showCards}
-                className="w-16 h-24 md:w-20 md:h-28"
+                rank={card.rank}
+                suit={card.suit}
+                className={cn(
+                  "border border-white/10 rounded-lg",
+                  isHero ? "w-20 h-28 md:w-24 md:h-36" : "w-14 h-20 md:w-16 md:h-24"
+                )}
               />
-            </div>
-          ))}
-        </div>
-      )}
+            ) : (
+              <div className={cn(
+                "bg-blue-900 border border-white/20 rounded-lg shadow-xl overflow-hidden relative",
+                isHero ? "w-20 h-28 md:w-24 md:h-36" : "w-14 h-20 md:w-16 md:h-24"
+              )}>
+                <div className="absolute inset-0 bg-[url('/cards/back_of_card.jpg')] bg-cover bg-center opacity-80"></div>
+                <div className="absolute inset-0 bg-gradient-to-tr from-black/40 to-transparent"></div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
 
-      {/* Current Bet Bubble */}
-      {player.currentBet > 0 && (
-        <div className="absolute -bottom-8 bg-yellow-500 text-black font-bold px-3 py-1 rounded-full text-xs shadow-md border border-yellow-300 z-30 animate-bounce">
-          {formatChips(player.currentBet)}
+      {/* Avatar Section */}
+      <div className="relative z-10 w-24 h-24 md:w-28 md:h-28 flex items-center justify-center">
+
+        {/* Active Player Glow/Timer Ring */}
+        <div className="absolute inset-0">
+          <svg className="w-full h-full rotate-[-90deg] drop-shadow-[0_0_15px_rgba(0,0,0,0.5)]">
+            {/* Background Ring */}
+            <circle cx="50%" cy="50%" r="46" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="4" />
+            {/* Timer Ring */}
+            {isCurrentPlayer && (
+              <circle
+                ref={progressCircleRef}
+                cx="50%" cy="50%" r="46"
+                fill="none"
+                stroke="url(#timerGradient)"
+                strokeWidth="4"
+                strokeLinecap="round"
+                strokeDasharray={2 * Math.PI * 46}
+                strokeDashoffset="0"
+                className="drop-shadow-[0_0_10px_rgba(234,179,8,0.8)]"
+              />
+            )}
+            <defs>
+              <linearGradient id="timerGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#fbbf24" />
+                <stop offset="100%" stopColor="#f59e0b" />
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+
+        {/* Avatar Image Container */}
+        <div className={cn(
+          "w-20 h-20 md:w-24 md:h-24 rounded-full p-[3px] relative z-10 transition-transform duration-300",
+          isCurrentPlayer ? "scale-105" : "",
+          isWinner ? "animate-bounce" : ""
+        )}>
+          {/* Border Gradient */}
+          <div className={cn(
+            "absolute inset-0 rounded-full bg-gradient-to-b opacity-100",
+            isCurrentPlayer ? "from-yellow-400 via-yellow-200 to-yellow-600 animate-pulse" :
+              isWinner ? "from-green-400 via-green-200 to-green-600" :
+                "from-gray-700 to-gray-900"
+          )}></div>
+
+          {/* Image Mask */}
+          <div className="relative w-full h-full rounded-full bg-black overflow-hidden border-[3px] border-[#0A0A0A]">
+            <img
+              src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${player.name}`}
+              alt={player.name}
+              className={cn("w-full h-full object-cover transition-opacity", isFolded ? "opacity-40 grayscale" : "")}
+            />
+
+            {/* Fold Overlay */}
+            {isFolded && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-[1px]">
+                <X className="w-8 h-8 text-red-500/80" />
+              </div>
+            )}
+
+            {/* Winner Overlay */}
+            {isWinner && (
+              <div className="absolute inset-0 flex items-center justify-center bg-yellow-500/20 mix-blend-overlay"></div>
+            )}
+          </div>
+
+          {/* Dealer Badge */}
+          {isDealer && (
+            <div className="absolute -top-1 -right-1 w-7 h-7 bg-gradient-to-br from-yellow-300 to-yellow-600 rounded-full flex items-center justify-center shadow-lg border border-yellow-200 z-20">
+              <span className="text-[10px] font-black text-black">D</span>
+            </div>
+          )}
+
+          {/* Winner Badge */}
+          {isWinner && (
+            <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-gradient-to-br from-green-400 to-emerald-600 rounded-full flex items-center justify-center shadow-lg border border-green-200 z-20 animate-bounce delay-100">
+              <Trophy className="w-4 h-4 text-white fill-current" />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Info Panel */}
+      <div className="mt-[-10px] relative z-20">
+        <div className={cn(
+          "glass-panel px-4 py-1.5 rounded-xl min-w-[110px] text-center border transition-colors duration-300 bg-[#0A0A0A]/90 backdrop-blur-md",
+          isCurrentPlayer ? "border-yellow-500/50 shadow-[0_0_15px_rgba(234,179,8,0.2)]" : "border-white/10 shadow-lg"
+        )}>
+          <div className={cn(
+            "text-xs font-bold truncate max-w-[100px] mb-0.5",
+            isCurrentPlayer ? "text-yellow-100" : "text-gray-300"
+          )}>
+            {player.name}
+          </div>
+          <div className={cn(
+            "text-[10px] font-black font-mono tracking-widest uppercase",
+            isCurrentPlayer ? "text-yellow-400" : "text-gray-500"
+          )}>
+            {formatChips(player.chips)}
+          </div>
+        </div>
+      </div>
+
+      {/* Action/Bet Bubble */}
+      {player.currentBet > 0 && !isFolded && (
+        <div className="absolute -right-8 top-0 md:-right-12 md:top-4 z-30 animate-zoom-in duration-300">
+          <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-white text-[10px] font-bold px-2 py-1 rounded-lg shadow-lg border border-blue-400/50 flex flex-col items-center min-w-[50px]">
+            <span className="text-[8px] uppercase tracking-widest opacity-80 mb-px">Bet</span>
+            <span className="font-mono">{formatChips(player.currentBet)}</span>
+          </div>
         </div>
       )}
 

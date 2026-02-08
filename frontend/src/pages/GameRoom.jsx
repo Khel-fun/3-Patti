@@ -17,7 +17,7 @@ import {
 import Button from "@/components/Button";
 import PlayerSeat from "@/components/PlayerSeat";
 import PlayingCard from "@/components/PlayingCard";
-import { formatChips } from "@/lib/utils";
+import { formatChips, formatRoomId, getShortRoomCode } from "@/lib/utils";
 import { useContracts } from "@/hooks/useContracts";
 import GameABI from "@/contracts/TeenPattiGame.json";
 import addresses from "@/contracts/addresses.json";
@@ -426,8 +426,10 @@ export default function GameRoom({ socket }) {
   }, [gameEnded, winnerInfo]);
 
   const handleCopyRoomId = () => {
-    navigator.clipboard.writeText(roomId);
-    setMessage("Room ID copied to clipboard!");
+    // Copy the short room code instead of full blockchain ID
+    const shortCode = getShortRoomCode(roomId);
+    navigator.clipboard.writeText(shortCode);
+    setMessage(`Room code ${shortCode} copied to clipboard!`);
     setTimeout(() => setMessage(""), 2000);
   };
 
@@ -593,39 +595,59 @@ export default function GameRoom({ socket }) {
 
   if (!gameState) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-900 via-red-800 to-orange-900 flex items-center justify-center p-4">
-        <div className="max-w-md w-full">
-          <div className="bg-black/30 backdrop-blur-sm rounded-lg p-8 text-center">
-            <Users className="w-16 h-16 text-white mx-auto mb-4 animate-pulse" />
-            <h2 className="text-white text-2xl font-bold mb-4">
-              Waiting for Players
+      <div className="min-h-screen bg-[#050505] relative flex items-center justify-center p-4 overflow-hidden">
+        {/* Dynamic Background */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-blue-500/5 rounded-full blur-[120px] animate-pulse delay-1000"></div>
+          <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-purple-500/5 rounded-full blur-[120px] animate-pulse delay-700"></div>
+          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03]"></div>
+        </div>
+
+        <div className="glass-panel max-w-md w-full rounded-3xl p-[1px] relative overflow-hidden animate-zoom-in duration-500">
+          {/* Scanline */}
+          <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent animate-scan"></div>
+
+          <div className="bg-[#0A0A0A]/90 backdrop-blur-xl rounded-[23px] p-10 text-center relative z-10">
+            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-gray-800 to-black border border-white/10 flex items-center justify-center mx-auto mb-8 shadow-inner relative group">
+              <Users className="w-10 h-10 text-white group-hover:scale-110 transition-transform duration-500" />
+              <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"></div>
+            </div>
+
+            <h2 className="text-3xl font-black text-white mb-2 tracking-wide font-display">
+              LOBBY
             </h2>
-            <div className="bg-white/10 rounded-lg p-4 mb-4">
-              <p className="text-gray-300 text-sm mb-2">Room ID</p>
-              <div className="flex items-center justify-center gap-2">
-                <p className="text-white text-sm font-bold tracking-wider break-all max-w-[250px]">
-                  {roomId}
+            <p className="text-gray-400 text-sm mb-8 tracking-wide uppercase font-bold">Waiting for Players to Join</p>
+
+            <div className="bg-white/5 rounded-2xl p-6 mb-8 border border-white/5 relative group hover:border-white/10 transition-colors">
+              <p className="text-gray-500 text-[10px] uppercase tracking-[0.2em] font-bold mb-3">Room Access ID</p>
+              <div className="flex items-center justify-center gap-3 relative">
+                <p className="text-2xl font-black text-white tracking-widest font-mono drop-shadow-md">
+                  {formatRoomId(roomId)}
                 </p>
+                <div className="h-6 w-px bg-white/10"></div>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={handleCopyRoomId}
-                  className="text-white hover:bg-white/10 flex-shrink-0"
+                  className="rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-all h-8 w-8"
+                  title="Copy ID"
                 >
-                  <Copy className="w-5 h-5" />
+                  <Copy className="w-4 h-4" />
                 </Button>
               </div>
             </div>
-            <p className="text-gray-300 mb-4">
-              Share this Room ID with your friends to join the game
+
+            <p className="text-gray-500 text-xs mb-8 leading-relaxed max-w-[280px] mx-auto">
+              Share this secure ID with your friends to invite them to the table.
             </p>
+
             <Button
               onClick={handleLeaveRoom}
               variant="outline"
-              className="bg-white/10 text-white border-white/20 hover:bg-white/20"
+              className="w-full border-white/10 hover:bg-white/5 text-gray-300 hover:text-white"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Leave Room
+              Return to Menu
             </Button>
           </div>
         </div>
@@ -1056,79 +1078,78 @@ export default function GameRoom({ socket }) {
       {/* Game Ended Overlay */}
       {
         gameEnded && (
-          <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-[100]">
+          <div className="fixed inset-0 bg-black/90 backdrop-blur-xl flex items-center justify-center z-[100]">
             {/* Background Glow */}
             <div className="absolute inset-0 overflow-hidden">
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-yellow-600/20 rounded-full blur-[100px] animate-pulse"></div>
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(234,179,8,0.15)_0%,transparent_70%)] animate-pulse"></div>
             </div>
 
             <div
               id="winner-modal"
-              className="relative bg-black/80 backdrop-blur-xl rounded-3xl p-10 max-w-md w-full mx-4 border border-yellow-500/30 shadow-[0_0_50px_rgba(234,179,8,0.3)] text-center overflow-hidden"
+              className="relative bg-[#0A0A0A] rounded-3xl max-w-lg w-full mx-4 border border-yellow-500/30 shadow-[0_0_100px_rgba(234,179,8,0.15)] text-center overflow-hidden"
             >
               {/* Decorative Elements */}
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-yellow-500 to-transparent"></div>
-              <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-yellow-500 to-transparent"></div>
+              <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-yellow-500/50 to-transparent"></div>
+              <div className="absolute bottom-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-yellow-500/50 to-transparent"></div>
+              <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.05]"></div>
 
-              <div className="relative z-10">
-                <div className="winner-content-item mb-6 relative inline-block">
-                  <div className="absolute inset-0 bg-yellow-500/50 blur-xl rounded-full"></div>
-                  <Trophy className="w-28 h-28 text-yellow-400 relative z-10 drop-shadow-[0_0_15px_rgba(250,204,21,0.5)]" />
+              <div className="relative z-10 p-10">
+                <div className="winner-content-item mb-8 relative inline-block">
+                  <div className="absolute inset-0 bg-yellow-500/30 blur-2xl rounded-full"></div>
+                  <Trophy className="w-24 h-24 text-yellow-400 relative z-10 drop-shadow-[0_5px_15px_rgba(0,0,0,0.5)]" />
                 </div>
 
                 {winnerInfo ? (
                   <>
-                    <h2 className="winner-content-item text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 via-yellow-400 to-yellow-200 text-5xl font-black mb-2 tracking-tight drop-shadow-sm">
-                      GAME OVER!
+                    <h2 className="winner-content-item text-transparent bg-clip-text bg-gradient-to-b from-yellow-200 via-yellow-400 to-yellow-600 text-6xl font-black mb-2 tracking-tighter drop-shadow-sm font-display uppercase">
+                      VICTORY
                     </h2>
-                    <p className="winner-content-item text-white/90 text-2xl font-medium mb-6 tracking-wide">
-                      {winnerInfo.name} wins!
+                    <p className="winner-content-item text-white/80 text-xl font-bold mb-8 tracking-widest uppercase">
+                      {winnerInfo.name} takes the pot!
                     </p>
 
                     {/* Player Payouts Table */}
                     {winnerInfo.playerChips && winnerInfo.playerChips.length > 0 ? (
-                      <div className="winner-content-item bg-gradient-to-b from-white/10 to-transparent rounded-2xl p-6 mb-8 border border-white/10 relative overflow-hidden">
-                        <p className="text-gray-400 text-xs font-bold tracking-[0.2em] uppercase mb-4 text-center">Cash Game Settlement</p>
+                      <div className="winner-content-item bg-white/[0.03] rounded-2xl p-6 mb-8 border border-white/5 relative overflow-hidden backdrop-blur-sm">
+                        <div className="flex items-center justify-between mb-4 px-2">
+                          <p className="text-gray-500 text-[10px] font-bold tracking-[0.2em] uppercase">Settlement Breakdown</p>
+                          <p className="text-gray-500 text-[10px] font-bold tracking-[0.2em] uppercase">Net Payout</p>
+                        </div>
 
                         {/* Calculate payouts using blockchain pot */}
                         {(() => {
                           const totalChips = winnerInfo.playerChips.reduce((sum, pc) => sum + pc.chips, 0);
-                          // Blockchain pot = number of players * buy-in (1000 TPT default)
-                          // For now we use player count * 1000 since buy-in is fixed
                           const blockchainPot = winnerInfo.playerChips.length * 1000;
-                          const rake = blockchainPot * 0.05; // 5% rake
+                          const rake = blockchainPot * 0.05;
                           const distributablePot = blockchainPot * 0.95;
 
                           return (
                             <>
-                              <div className="space-y-2 mb-4">
+                              <div className="space-y-2 mb-4 max-h-[160px] overflow-y-auto custom-scrollbar pr-1">
                                 {winnerInfo.playerChips
-                                  .sort((a, b) => b.chips - a.chips) // Sort by chips descending
+                                  .sort((a, b) => b.chips - a.chips)
                                   .map((playerChip, idx) => {
                                     const percentage = totalChips > 0 ? (playerChip.chips / totalChips * 100) : 0;
                                     const payout = totalChips > 0 ? Math.floor(distributablePot * playerChip.chips / totalChips) : 0;
-                                    const isWinner = idx === 0; // First player after sorting has most chips
+                                    const isWinner = idx === 0;
 
                                     return (
                                       <div
                                         key={playerChip.id}
-                                        className={`flex items-center justify-between p-3 rounded-xl ${isWinner
-                                          ? 'bg-yellow-500/20 border border-yellow-500/30'
-                                          : 'bg-white/5 border border-white/5'
+                                        className={`flex items-center justify-between p-3 rounded-xl transition-colors ${isWinner
+                                          ? 'bg-yellow-500/10 border border-yellow-500/20'
+                                          : 'hover:bg-white/5 border border-transparent'
                                           }`}
                                       >
                                         <div className="flex items-center gap-3">
-                                          {isWinner && <Trophy className="w-4 h-4 text-yellow-400" />}
-                                          <span className={`text-sm font-medium ${isWinner ? 'text-yellow-100' : 'text-gray-300'}`}>
-                                            {playerChip.id.slice(0, 8)}...
+                                          {isWinner ? <Trophy className="w-3 h-3 text-yellow-500" /> : <div className="w-3 h-3" />}
+                                          <span className={`text-xs font-bold font-mono ${isWinner ? 'text-yellow-100' : 'text-gray-400'}`}>
+                                            {playerChip.id.slice(0, 6)}...
                                           </span>
                                         </div>
-                                        <div className="flex items-center gap-4">
-                                          <div className="text-right">
-                                            <div className="text-xs text-gray-400">{percentage.toFixed(1)}% • {formatChips(playerChip.chips)} chips</div>
-                                            <div className={`text-sm font-bold ${isWinner ? 'text-yellow-100' : 'text-white'}`}>
-                                              {formatChips(payout)} TPT
-                                            </div>
+                                        <div className="text-right">
+                                          <div className={`text-sm font-black font-mono tracking-wide ${isWinner ? 'text-yellow-400' : 'text-white'}`}>
+                                            {formatChips(payout)} TPT
                                           </div>
                                         </div>
                                       </div>
@@ -1137,10 +1158,9 @@ export default function GameRoom({ socket }) {
                               </div>
 
                               {/* Rake Info */}
-                              <div className="text-center pt-3 border-t border-white/10">
-                                <p className="text-xs text-gray-500">
-                                  Platform Rake: {formatChips(Math.floor(rake))} TPT (5%)
-                                </p>
+                              <div className="flex justify-between items-center pt-3 border-t border-white/5 px-2">
+                                <span className="text-[10px] text-gray-600 font-bold uppercase tracking-wider">Platform Fee (5%)</span>
+                                <span className="text-[10px] text-gray-500 font-mono">{formatChips(Math.floor(rake))} TPT</span>
                               </div>
                             </>
                           );
@@ -1161,17 +1181,17 @@ export default function GameRoom({ socket }) {
                     )}
 
                     {winnerInfo.reason && (
-                      <p className="winner-content-item text-gray-400 text-sm mb-8 italic">
-                        "{winnerInfo.reason}"
+                      <p className="winner-content-item text-gray-500 text-xs uppercase tracking-widest font-bold mb-8">
+                        — {winnerInfo.reason} —
                       </p>
                     )}
                   </>
                 ) : (
                   <>
-                    <h2 className="winner-content-item text-white text-4xl font-bold mb-4">
-                      Game Ended
+                    <h2 className="winner-content-item text-white text-4xl font-bold mb-4 font-display uppercase tracking-widest">
+                      Game Over
                     </h2>
-                    <p className="winner-content-item text-gray-300 mb-8">
+                    <p className="winner-content-item text-gray-500 font-medium mb-8">
                       The game has concluded.
                     </p>
                   </>
@@ -1179,9 +1199,9 @@ export default function GameRoom({ socket }) {
 
                 <Button
                   onClick={() => navigate("/")}
-                  className="winner-content-item w-full h-14 bg-gradient-to-r from-yellow-600 to-yellow-700 hover:from-yellow-500 hover:to-yellow-600 text-white font-bold text-lg rounded-xl shadow-lg shadow-yellow-900/20 border border-yellow-500/20 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 group"
+                  className="winner-content-item w-full h-14 bg-white/5 hover:bg-white/10 text-white font-bold text-sm tracking-widest uppercase rounded-xl border border-white/10 transition-all hover:border-white/20 flex items-center justify-center gap-3 group"
                 >
-                  <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                  <ArrowLeft className="w-4 h-4 text-gray-400 group-hover:text-white transition-colors" />
                   Return to Lobby
                 </Button>
               </div>
