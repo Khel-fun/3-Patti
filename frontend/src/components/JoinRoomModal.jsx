@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
-import { X, Loader2, Users, Coins, Info, AlertCircle, Search, ArrowRight, ShieldCheck } from 'lucide-react';
+import { X, Loader2, Coins, AlertCircle, Search, ShieldCheck } from 'lucide-react';
 import Button from './Button';
 import Input from './Input';
 import { useContracts } from '@/hooks/useContracts';

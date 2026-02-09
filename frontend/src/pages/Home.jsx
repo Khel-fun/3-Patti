@@ -23,6 +23,7 @@ import CreateRoomModal from "@/components/CreateRoomModal";
 import JoinRoomModal from "@/components/JoinRoomModal";
 import { useWallet } from "@/hooks/useWallet.jsx";
 import { cn } from "@/lib/utils";
+import GlowingBackground from "@/components/GlowingBackground";
 
 export default function Home({ socket }) {
   const navigate = useNavigate();
@@ -66,13 +67,7 @@ export default function Home({ socket }) {
     <div className="min-h-screen relative overflow-hidden bg-black text-white font-sans selection:bg-white/20">
 
       {/* Dynamic Background */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-[-20%] left-[20%] w-[60%] h-[60%] bg-blue-500/5 rounded-full blur-[150px] animate-pulse delay-1000"></div>
-        <div className="absolute bottom-[-10%] right-[-5%] w-[40%] h-[40%] bg-purple-500/5 rounded-full blur-[120px] animate-pulse delay-700"></div>
-
-        {/* Mesh Grid */}
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:50px_50px] [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_100%)]"></div>
-      </div>
+      <GlowingBackground />
 
       {/* Navbar */}
       <nav className="relative z-50 border-b border-white/5 bg-black/60 backdrop-blur-xl supports-[backdrop-filter]:bg-black/40">

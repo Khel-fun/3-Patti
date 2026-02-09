@@ -1,7 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useAccount, useSwitchChain } from 'wagmi';
-import Button from './Button';
-import { AlertTriangle, ArrowRight } from 'lucide-react';
 import addresses from '../contracts/addresses.json';
 
 // Get all supported chain IDs from addresses.json

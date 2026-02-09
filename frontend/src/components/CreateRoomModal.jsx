@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ethers } from 'ethers';
-import { X, Loader2, Users, Coins, AlertCircle, Info, Trophy, Settings2, ShieldCheck, ArrowRight, Copy, Check } from 'lucide-react';
+import { X, Loader2, Users, Coins, AlertCircle, Trophy, Settings2, ShieldCheck, ArrowRight, Copy, Check } from 'lucide-react';
 import Button from './Button';
 import Input from './Input';
 import { useContracts } from '@/hooks/useContracts';
@@ -9,7 +9,6 @@ import { useAccount, useReadContract } from 'wagmi';
 import TokenABI from '@/contracts/TeenPattiToken.json';
 import addresses from '@/contracts/addresses.json';
 import { cn } from '@/lib/utils';
-import { getShortRoomCode } from '@/lib/utils';
 
 export default function CreateRoomModal({ isOpen, onClose, onSuccess, socket }) {
   const { account } = useWallet();

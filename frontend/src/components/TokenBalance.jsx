@@ -1,10 +1,8 @@
 import { Coins, RefreshCw } from 'lucide-react';
-import { useAccount, useReadContract, useBalance } from 'wagmi';
-import { formatChips } from '@/lib/utils';
+import { useAccount, useReadContract } from 'wagmi';
 import { ethers } from 'ethers';
 import TokenABI from '@/contracts/TeenPattiToken.json';
 import addresses from '@/contracts/addresses.json';
-import Button from './Button';
 
 export default function TokenBalance() {
   const { address: account, isConnected } = useAccount();

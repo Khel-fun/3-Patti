@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { User, Crown, X, Trophy } from 'lucide-react';
+import { useEffect, useRef } from 'react';
+import { X, Trophy } from 'lucide-react';
 import { cn, formatChips } from '@/lib/utils';
 import PlayingCard from './PlayingCard';
 import gsap from 'gsap';

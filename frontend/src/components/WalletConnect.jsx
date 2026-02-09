@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useAccount, useConnect, useDisconnect, useSwitchChain } from 'wagmi';
 import { Wallet, LogOut, ChevronDown, CheckCircle2, Network } from 'lucide-react';
-import { useWallet } from '@/hooks/useWallet.jsx';
 import Button from './Button';
 import { cn } from '@/lib/utils';
 
