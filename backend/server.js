@@ -670,6 +670,18 @@ io.on("connection", (socket) => {
 
     // Delete game if no players left
     if (game.players.length === 0) {
+      // Clean up roomCodeMap if this was a blockchain room
+      if (game.blockchainRoomId) {
+        const shortCode = getShortRoomCode(game.blockchainRoomId);
+        const mappedRoomId = roomCodeMap.get(shortCode);
+        
+        // Only delete if it maps to this room 
+        if (mappedRoomId === game.blockchainRoomId) {
+          roomCodeMap.delete(shortCode);
+          console.log(`🧹 Cleaned up short code: ${shortCode}`);
+        }
+      }
+      
       games.delete(playerInfo.roomId);
       console.log(`Room ${playerInfo.roomId} deleted (no players)`);
     }
