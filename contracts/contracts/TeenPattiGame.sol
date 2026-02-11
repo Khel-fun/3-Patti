@@ -6,12 +6,24 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
 
+interface IVerifyProofAggregation {
+    function verifyProofAggregation(
+        uint256 _domainId,
+        uint256 _aggregationId,
+        bytes32 _leaf,
+        bytes32[] calldata _merklePath,
+        uint256 _leafCount,
+        uint256 _index
+    ) external view returns (bool);
+}
+
 /**
  * @title TeenPattiGame
  * @dev Manages Teen Patti game rooms, bets, and payouts
  */
 contract TeenPattiGame is Ownable, ReentrancyGuard, Pausable {
     IERC20 public token;
+    address public zkVerify;
     
     // Game states
     enum GameState { WAITING, ACTIVE, FINISHED, CANCELLED }
@@ -41,7 +53,7 @@ contract TeenPattiGame is Ownable, ReentrancyGuard, Pausable {
     uint256 public rakeFee = 500; // 5%
     address public treasury;
     uint256 public totalRakeCollected;
-    
+
     // Timeout settings
     uint256 public constant GAME_TIMEOUT = 1 hours;
     
@@ -56,14 +68,17 @@ contract TeenPattiGame is Ownable, ReentrancyGuard, Pausable {
     event RoomClosed(bytes32 indexed roomId);
     event RakeFeeUpdated(uint256 newRakeFee);
     event TreasuryUpdated(address indexed newTreasury);
+    event ZkVerifyUpdated(address indexed zkVerify);
     event EmergencyWithdraw(bytes32 indexed roomId, address indexed player, uint256 amount);
     
-    constructor(address _token, address _treasury) Ownable(msg.sender) {
+    constructor(address _token, address _treasury, address _zkVerify) Ownable(msg.sender) {
         require(_token != address(0), "Invalid token address");
         require(_treasury != address(0), "Invalid treasury address");
+        require(_zkVerify != address(0), "Invalid zkVerify address");
         
         token = IERC20(_token);
         treasury = _treasury;
+        zkVerify = _zkVerify;
     }
     
     /**
@@ -206,6 +221,41 @@ contract TeenPattiGame is Ownable, ReentrancyGuard, Pausable {
      * @dev Declare winner and distribute pot (only backend)
      */
     function declareWinner(bytes32 _roomId, address _winner) external nonReentrant {
+        _declareWinner(_roomId, _winner);
+    }
+
+    /**
+     * @dev Generic aggregation verifier using Kurier response fields.
+     * @notice Caller passes all inputs (including domainId and zkVerify contract address).
+     */
+    function verifyProofAggregation(
+        uint256 _domainId,
+        uint256 _aggregationId,
+        bytes32 _leaf,
+        bytes32[] calldata _merklePath,
+        uint256 _leafCount,
+        uint256 _index
+    ) external view returns (bool) {
+        return IVerifyProofAggregation(zkVerify).verifyProofAggregation(
+            _domainId,
+            _aggregationId,
+            _leaf,
+            _merklePath,
+            _leafCount,
+            _index
+        );
+    }
+
+    /**
+     * @dev Update zkVerify contract address (only owner)
+     */
+    function updateZkVerify(address _zkVerify) external onlyOwner {
+        require(_zkVerify != address(0), "Invalid zkVerify address");
+        zkVerify = _zkVerify;
+        emit ZkVerifyUpdated(_zkVerify);
+    }
+
+    function _declareWinner(bytes32 _roomId, address _winner) internal {
         Room storage room = rooms[_roomId];
         
         // require(msg.sender == owner(), "Only backend can declare winner");

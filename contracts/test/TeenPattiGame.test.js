@@ -9,6 +9,7 @@ describe("TeenPattiGame", function () {
   let player1;
   let player2;
   let player3;
+  let mockZkVerify;
 
   beforeEach(async function () {
     [owner, treasury, player1, player2, player3] = await ethers.getSigners();
@@ -18,9 +19,17 @@ describe("TeenPattiGame", function () {
     token = await TeenPattiToken.deploy(treasury.address);
     await token.waitForDeployment();
 
+    const MockZkVerify = await ethers.getContractFactory("MockZkVerify");
+    mockZkVerify = await MockZkVerify.deploy();
+    await mockZkVerify.waitForDeployment();
+
     // Deploy game
     const TeenPattiGame = await ethers.getContractFactory("TeenPattiGame");
-    game = await TeenPattiGame.deploy(await token.getAddress(), treasury.address);
+    game = await TeenPattiGame.deploy(
+      await token.getAddress(),
+      treasury.address,
+      await mockZkVerify.getAddress()
+    );
     await game.waitForDeployment();
 
     // Give tokens to players
@@ -42,6 +51,10 @@ describe("TeenPattiGame", function () {
 
     it("Should set the right treasury", async function () {
       expect(await game.treasury()).to.equal(treasury.address);
+    });
+
+    it("Should set the right zkVerify", async function () {
+      expect(await game.zkVerify()).to.equal(await mockZkVerify.getAddress());
     });
 
     it("Should set default rake fee", async function () {
@@ -443,6 +456,56 @@ describe("TeenPattiGame", function () {
 
       const details = await game.getRoomDetails(roomId);
       expect(details.winner).to.equal(player2.address);
+    });
+  });
+
+  describe("zkVerify Aggregation Verification", function () {
+    it("Should verify proof aggregation with provided inputs", async function () {
+      await mockZkVerify.setVerificationResult(true);
+
+      const isValid = await game.verifyProofAggregation(
+        0,
+        137,
+        ethers.keccak256(ethers.toUtf8Bytes("leaf")),
+        [
+          ethers.keccak256(ethers.toUtf8Bytes("proof-1")),
+          ethers.keccak256(ethers.toUtf8Bytes("proof-2")),
+        ],
+        8,
+        0
+      );
+
+      expect(isValid).to.equal(true);
+    });
+
+    it("Should return false when verifier returns false", async function () {
+      await mockZkVerify.setVerificationResult(false);
+
+      const isValid = await game.verifyProofAggregation(
+        0,
+        137,
+        ethers.keccak256(ethers.toUtf8Bytes("leaf")),
+        [],
+        8,
+        0
+      );
+
+      expect(isValid).to.equal(false);
+    });
+
+    it("Should allow owner to update zkVerify address", async function () {
+      const MockZkVerify = await ethers.getContractFactory("MockZkVerify");
+      const newMock = await MockZkVerify.deploy();
+      await newMock.waitForDeployment();
+
+      await game.updateZkVerify(await newMock.getAddress());
+      expect(await game.zkVerify()).to.equal(await newMock.getAddress());
+    });
+
+    it("Should revert with invalid zkVerify address", async function () {
+      await expect(
+        game.updateZkVerify(ethers.ZeroAddress)
+      ).to.be.revertedWith("Invalid zkVerify address");
     });
   });
 });

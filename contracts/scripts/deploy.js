@@ -14,6 +14,13 @@ async function main() {
   // Set treasury address (use deployer for now, change later)
   const treasuryAddress = deployer.address;
   console.log("Treasury address:", treasuryAddress);
+
+  // zkVerify contract for current network (must be set for TeenPattiGame)
+  const zkVerifyAddress = process.env.ZKVERIFY_ADDRESS;
+  if (!zkVerifyAddress) {
+    throw new Error("Missing ZKVERIFY_ADDRESS in environment");
+  }
+  console.log("zkVerify address:", zkVerifyAddress);
   
   // Deploy TeenPattiToken
   console.log("\n📝 Deploying TeenPattiToken...");
@@ -26,7 +33,7 @@ async function main() {
   // Deploy TeenPattiGame
   console.log("\n📝 Deploying TeenPattiGame...");
   const TeenPattiGame = await hre.ethers.getContractFactory("TeenPattiGame");
-  const game = await TeenPattiGame.deploy(tokenAddress, treasuryAddress);
+  const game = await TeenPattiGame.deploy(tokenAddress, treasuryAddress, zkVerifyAddress);
   await game.waitForDeployment();
   const gameAddress = await game.getAddress();
   console.log("✅ TeenPattiGame deployed to:", gameAddress);
@@ -37,6 +44,7 @@ async function main() {
     chainId: (await hre.ethers.provider.getNetwork()).chainId.toString(),
     deployer: deployer.address,
     treasury: treasuryAddress,
+    zkVerify: zkVerifyAddress,
     contracts: {
       TeenPattiToken: tokenAddress,
       TeenPattiGame: gameAddress
@@ -135,7 +143,7 @@ async function main() {
   if (hre.network.name !== "localhost" && hre.network.name !== "hardhat") {
     console.log("\n📝 To verify contracts, run:");
     console.log(`npx hardhat verify --network ${hre.network.name} ${tokenAddress} ${treasuryAddress}`);
-    console.log(`npx hardhat verify --network ${hre.network.name} ${gameAddress} ${tokenAddress} ${treasuryAddress}`);
+    console.log(`npx hardhat verify --network ${hre.network.name} ${gameAddress} ${tokenAddress} ${treasuryAddress} ${zkVerifyAddress}`);
   }
 }
 
