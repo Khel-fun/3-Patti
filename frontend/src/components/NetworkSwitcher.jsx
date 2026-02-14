@@ -1,100 +1,69 @@
 import { useEffect, useState } from 'react';
-import { useWallet } from '../hooks/useWallet';
-import Button from './Button';
+import { useAccount, useSwitchChain } from 'wagmi';
+import addresses from '../contracts/addresses.json';
 
-const SUPPORTED_NETWORKS = {
-  84532: {
-    name: 'Base Sepolia',
-    chainId: '0x14a34', // 84532 in hex
-    rpcUrls: ['https://sepolia.base.org'],
-    blockExplorerUrls: ['https://sepolia.basescan.org'],
-    nativeCurrency: {
-      name: 'ETH',
-      symbol: 'ETH',
-      decimals: 18
-    }
-  }
-};
+// Get all supported chain IDs from addresses.json
+const SUPPORTED_CHAIN_IDS = Object.values(addresses).map(network => network.chainId);
 
-const TARGET_CHAIN_ID = 84532; // Base Sepolia
-
-export function NetworkSwitcher() {
-  const { chainId, switchNetwork } = useWallet();
+export default function NetworkSwitcher() {
+  const { isConnected, chain, address } = useAccount();
+  const { switchChain, isPending: isSwitching } = useSwitchChain();
   const [isWrongNetwork, setIsWrongNetwork] = useState(false);
-  const [isSwitching, setIsSwitching] = useState(false);
 
   useEffect(() => {
-    if (chainId && chainId !== TARGET_CHAIN_ID) {
+    // Only show if wallet is ACTUALLY connected (has address) AND on wrong network
+    if (isConnected && address && chain?.id && !SUPPORTED_CHAIN_IDS.includes(chain.id)) {
       setIsWrongNetwork(true);
     } else {
       setIsWrongNetwork(false);
     }
-  }, [chainId]);
+  }, [isConnected, address, chain?.id]);
 
-  async function handleSwitchNetwork() {
-    setIsSwitching(true);
+  if (!isConnected || !address || !isWrongNetwork) return null;
+
+  const handleSwitch = async () => {
     try {
-      const success = await switchNetwork(TARGET_CHAIN_ID);
-      
-      if (!success) {
-        // If switch failed, try to add the network
-        await addNetwork();
-      }
-    } catch (error) {
-      console.error('Error switching network:', error);
-      
-      // If the network doesn't exist, add it
-      if (error.code === 4902) {
-        await addNetwork();
-      }
-    } finally {
-      setIsSwitching(false);
+      // Switch to the first supported network
+      await switchChain({ chainId: SUPPORTED_CHAIN_IDS[0] });
+    } catch (e) {
+      console.error('Failed to switch network:', e);
     }
-  }
+  };
 
-  async function addNetwork() {
-    try {
-      const network = SUPPORTED_NETWORKS[TARGET_CHAIN_ID];
-      await window.ethereum.request({
-        method: 'wallet_addEthereumChain',
-        params: [{
-          chainId: network.chainId,
-          chainName: network.name,
-          rpcUrls: network.rpcUrls,
-          blockExplorerUrls: network.blockExplorerUrls,
-          nativeCurrency: network.nativeCurrency
-        }]
-      });
-    } catch (error) {
-      console.error('Error adding network:', error);
-    }
-  }
+  // return (
+  //   <div className="fixed top-0 left-0 right-0 z-[100] animate-slide-in-top duration-500">
+  //     <div className="bg-yellow-500/10 backdrop-blur-md border-b border-yellow-500/20 shadow-[0_0_30px_rgba(234,179,8,0.2)]">
+  //       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
 
-  if (!isWrongNetwork) {
-    return null;
-  }
+  //         <div className="flex items-center gap-4">
+  //           <div className="w-10 h-10 rounded-xl bg-yellow-500/20 flex items-center justify-center shrink-0 border border-yellow-500/30 animate-pulse">
+  //             <AlertTriangle className="w-5 h-5 text-yellow-500" />
+  //           </div>
+  //           <div>
+  //             <h3 className="text-white font-black uppercase tracking-wider text-sm">System Alert: Network Mismatch</h3>
+  //             <p className="text-yellow-500/80 text-xs font-medium">
+  //               Please switch your wallet to <span className="text-white font-bold">Base Sepolia</span> to continue.
+  //             </p>
+  //           </div>
+  //         </div>
 
-  return (
-    <div className="fixed top-0 left-0 right-0 bg-yellow-500 text-black p-4 z-50">
-      <div className="container mx-auto flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
-          <div>
-            <p className="font-semibold">Wrong Network</p>
-            <p className="text-sm">Please switch to Base Sepolia network to use this app</p>
-          </div>
-        </div>
-        <Button
-          onClick={handleSwitchNetwork}
-          disabled={isSwitching}
-          variant="outline"
-          className="bg-black text-yellow-500 hover:bg-gray-800"
-        >
-          {isSwitching ? 'Switching...' : 'Switch Network'}
-        </Button>
-      </div>
-    </div>
-  );
+  //         <Button
+  //           onClick={handleSwitch}
+  //           disabled={isSwitching}
+  //           className="bg-yellow-500 hover:bg-yellow-400 text-black font-black uppercase tracking-wide text-xs px-6 h-10 shadow-lg shadow-yellow-500/20 border-none flex items-center gap-2"
+  //         >
+  //           {isSwitching ? 'Switching...' : (
+  //             <>
+  //               Switch Network <ArrowRight className="w-3 h-3" />
+  //             </>
+  //           )}
+  //         </Button>
+
+  //       </div>
+
+  //       {/* Progress Bar Line */}
+  //       <div className="absolute bottom-0 left-0 h-[1px] bg-gradient-to-r from-transparent via-yellow-500 to-transparent w-full animate-pulse"></div>
+  //     </div>
+  //   </div>
+  // );
 }

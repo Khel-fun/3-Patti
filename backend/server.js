@@ -24,6 +24,45 @@ const games = new Map();
 // Store player socket mappings
 const playerSockets = new Map();
 
+// Store mapping between short room codes and full blockchain room IDs
+const roomCodeMap = new Map(); // shortCode -> fullBlockchainRoomId
+
+/**
+ * Extract a short, shareable code from a blockchain room ID
+ * Takes the first 6 non-zero hex characters after 0x prefix
+ */
+function getShortRoomCode(roomId) {
+  if (!roomId) return "";
+
+  // Remove 0x prefix and get just the hex string
+  const hex = roomId.startsWith("0x") ? roomId.slice(2) : roomId;
+
+  // Find first non-zero character
+  let chars = "";
+  for (let i = 0; i < hex.length && chars.length < 6; i++) {
+    if (hex[i] !== "0" || chars.length > 0) {
+      chars += hex[i];
+    }
+  }
+
+  // If we have at least 6 characters, return them uppercase
+  if (chars.length >= 6) {
+    return chars.slice(0, 6).toUpperCase();
+  }
+
+  // Fallback: if roomId is all zeros or very short, use last 6 chars
+  return hex.slice(-6).toUpperCase();
+}
+
+/**
+ * Find full blockchain room ID by short code
+ */
+function findRoomByShortCode(shortCode) {
+  if (!shortCode) return null;
+  const cleanCode = shortCode.replace(/[^a-fA-F0-9]/g, "").toUpperCase();
+  return roomCodeMap.get(cleanCode) || null;
+}
+
 app.get("/health", (req, res) => {
   res.json({ status: "ok", activeGames: games.size });
 });
@@ -37,7 +76,7 @@ app.post("/api/settle-game", async (req, res) => {
     if (!blockchainRoomId || !playerChips || !Array.isArray(playerChips)) {
       return res.status(400).json({
         success: false,
-        error: 'Missing required fields: blockchainRoomId and playerChips'
+        error: "Missing required fields: blockchainRoomId and playerChips",
       });
     }
 
@@ -45,7 +84,7 @@ app.post("/api/settle-game", async (req, res) => {
     if (!roomId) {
       return res.status(400).json({
         success: false,
-        error: 'roomId is required for verification'
+        error: "roomId is required for verification",
       });
     }
 
@@ -53,37 +92,39 @@ app.post("/api/settle-game", async (req, res) => {
     if (!game) {
       return res.status(404).json({
         success: false,
-        error: 'Game not found - cannot verify chip counts'
+        error: "Game not found - cannot verify chip counts",
       });
     }
 
     // Get REAL chip counts from backend game state
-    const realChipCounts = game.players.map(p => ({
+    const realChipCounts = game.players.map((p) => ({
       id: p.id,
-      chips: p.chips
+      chips: p.chips,
     }));
 
-    console.log('Verifying settlement for game:', roomId);
-    console.log('Submitted chip counts:', playerChips);
-    console.log('Real chip counts:', realChipCounts);
+    console.log("Verifying settlement for game:", roomId);
+    console.log("Submitted chip counts:", playerChips);
+    console.log("Real chip counts:", realChipCounts);
 
     // Verify submitted data matches actual game state
     if (playerChips.length !== realChipCounts.length) {
       return res.status(400).json({
         success: false,
-        error: 'Player count mismatch'
+        error: "Player count mismatch",
       });
     }
 
     // Check each player's chips match
-    const isValid = playerChips.every(submitted => {
-      const real = realChipCounts.find(r => r.id === submitted.id);
+    const isValid = playerChips.every((submitted) => {
+      const real = realChipCounts.find((r) => r.id === submitted.id);
       if (!real) {
         console.error(`Player ${submitted.id} not found in game`);
         return false;
       }
       if (real.chips !== submitted.chips) {
-        console.error(`Chip mismatch for ${submitted.id}: submitted=${submitted.chips}, real=${real.chips}`);
+        console.error(
+          `Chip mismatch for ${submitted.id}: submitted=${submitted.chips}, real=${real.chips}`,
+        );
         return false;
       }
       return true;
@@ -92,7 +133,8 @@ app.post("/api/settle-game", async (req, res) => {
     if (!isValid) {
       return res.status(400).json({
         success: false,
-        error: 'Chip counts do not match game state - possible manipulation attempt'
+        error:
+          "Chip counts do not match game state - possible manipulation attempt",
       });
     }
 
@@ -100,22 +142,27 @@ app.post("/api/settle-game", async (req, res) => {
     if (!settlementService.isInitialized()) {
       return res.status(503).json({
         success: false,
-        error: 'Settlement service not initialized. Check server logs.'
+        error: "Settlement service not initialized. Check server logs.",
       });
     }
 
     // ✅ Use VERIFIED chip counts from backend game state
     console.log(`✅ Chip counts verified - settling game ${blockchainRoomId}`);
-    const result = await settlementService.settleCashGame(blockchainRoomId, realChipCounts);
+    const result = await settlementService.settleCashGame(
+      blockchainRoomId,
+      realChipCounts,
+    );
 
     if (result.success) {
-      console.log(`✅ Game ${blockchainRoomId} settled successfully: ${result.txHash}`);
+      console.log(
+        `✅ Game ${blockchainRoomId} settled successfully: ${result.txHash}`,
+      );
 
       // Notify all players in the room about settlement
-      io.to(roomId).emit('gameSettled', {
+      io.to(roomId).emit("gameSettled", {
         txHash: result.txHash,
         payouts: result.payouts,
-        blockchainRoomId
+        blockchainRoomId,
       });
 
       return res.json(result);
@@ -123,12 +170,11 @@ app.post("/api/settle-game", async (req, res) => {
       console.error(`❌ Settlement failed: ${result.error}`);
       return res.status(400).json(result);
     }
-
   } catch (error) {
-    console.error('API error in /api/settle-game:', error);
+    console.error("API error in /api/settle-game:", error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Internal server error'
+      error: error.message || "Internal server error",
     });
   }
 });
@@ -202,18 +248,24 @@ io.on("connection", (socket) => {
       games.set(roomId, game);
       playerSockets.set(socket.id, { playerId, roomId });
 
+      // Register short code mapping for easy joining
+      const shortCode = getShortRoomCode(blockchainRoomId);
+      roomCodeMap.set(shortCode, blockchainRoomId);
+      console.log(`Short code registered: ${shortCode} -> ${blockchainRoomId}`);
+
       socket.join(roomId);
 
       socket.emit("roomCreated", {
         roomId,
         playerId,
         gameState: game.getGameState(),
+        shortCode, // Send short code back to client
       });
 
       console.log(
-        `Blockchain room ${roomId} created by ${creator} (tx: ${txHash})`
+        `Blockchain room ${roomId} created by ${creator} (tx: ${txHash}, code: ${shortCode})`,
       );
-    }
+    },
   );
 
   // Join an existing game room
@@ -262,6 +314,29 @@ io.on("connection", (socket) => {
     console.log(`${playerName} joined room ${roomId}`);
   });
 
+  // Resolve short room code to full blockchain room ID
+  socket.on("resolveRoomCode", ({ shortCode }) => {
+    console.log("Resolving room code:", shortCode);
+
+    const fullRoomId = findRoomByShortCode(shortCode);
+
+    if (fullRoomId) {
+      socket.emit("roomCodeResolved", {
+        success: true,
+        shortCode,
+        blockchainRoomId: fullRoomId,
+      });
+      console.log(`Short code ${shortCode} resolved to ${fullRoomId}`);
+    } else {
+      socket.emit("roomCodeResolved", {
+        success: false,
+        shortCode,
+        error: "Room code not found",
+      });
+      console.log(`Short code ${shortCode} not found`);
+    }
+  });
+
   // Join room with blockchain integration
   socket.on(
     "joinRoomWithBlockchain",
@@ -278,7 +353,7 @@ io.on("connection", (socket) => {
 
       // Check if player already joined
       const existingPlayer = game.players.find(
-        (p) => p.walletAddress === player
+        (p) => p.walletAddress === player,
       );
       if (existingPlayer) {
         // Player already in game, just reconnect
@@ -316,7 +391,7 @@ io.on("connection", (socket) => {
         playerId,
         playerName,
         socket.id,
-        playerChips
+        playerChips,
       );
       newPlayer.walletAddress = player;
 
@@ -343,7 +418,7 @@ io.on("connection", (socket) => {
       });
 
       console.log(`${player} joined blockchain room ${roomId} (tx: ${txHash})`);
-    }
+    },
   );
 
   // Start the game
@@ -371,7 +446,7 @@ io.on("connection", (socket) => {
     // Send cards to each player privately
     game.players.forEach((player) => {
       const playerSocket = Array.from(playerSockets.entries()).find(
-        ([_, info]) => info.playerId === player.id
+        ([_, info]) => info.playerId === player.id,
       );
 
       if (playerSocket) {
@@ -454,7 +529,7 @@ io.on("connection", (socket) => {
       });
 
       console.log(
-        `Game ended in room ${playerInfo.roomId}. Winner: ${winner.name}`
+        `Game ended in room ${playerInfo.roomId}. Winner: ${winner.name}`,
       );
     } else {
       // Notify whose turn it is
@@ -522,7 +597,9 @@ io.on("connection", (socket) => {
         gameState: game.getGameState(),
       });
 
-      console.log(`Showdown in room ${playerInfo.roomId}. Winner: ${winner.name}`);
+      console.log(
+        `Showdown in room ${playerInfo.roomId}. Winner: ${winner.name}`,
+      );
 
       // 2. Wait for 4 seconds to let players see the cards
       setTimeout(() => {
@@ -593,6 +670,18 @@ io.on("connection", (socket) => {
 
     // Delete game if no players left
     if (game.players.length === 0) {
+      // Clean up roomCodeMap if this was a blockchain room
+      if (game.blockchainRoomId) {
+        const shortCode = getShortRoomCode(game.blockchainRoomId);
+        const mappedRoomId = roomCodeMap.get(shortCode);
+        
+        // Only delete if it maps to this room 
+        if (mappedRoomId === game.blockchainRoomId) {
+          roomCodeMap.delete(shortCode);
+          console.log(`🧹 Cleaned up short code: ${shortCode}`);
+        }
+      }
+      
       games.delete(playerInfo.roomId);
       console.log(`Room ${playerInfo.roomId} deleted (no players)`);
     }
@@ -603,7 +692,7 @@ const PORT = process.env.PORT || 3001;
 
 // Initialize settlement service and start server
 (async () => {
-  console.log('\n🚀 Starting Teen Patti Server...\n');
+  console.log("\n🚀 Starting Teen Patti Server...\n");
 
   // Initialize settlement service
   await settlementService.initialize();

@@ -5,7 +5,7 @@ export default function PlayingCard({ rank, suit, faceDown = false, className })
   // Get card image filename
   const getCardImage = () => {
     if (faceDown || !rank || !suit) {
-      return '/cards/back_of_card.jpg';
+      return '/cards/back_of_card.jpg'; // Updated to match other references
     }
 
     // Normalize suit to single character
@@ -17,7 +17,13 @@ export default function PlayingCard({ rank, suit, faceDown = false, className })
     };
 
     const normalizedSuit = suit ? suit.toLowerCase() : '';
-    const suitChar = suitMap[normalizedSuit] || normalizedSuit.charAt(0);
+    // Handle both full names and symbols
+    let suitChar = suitMap[normalizedSuit];
+
+    // If not in map, try first char
+    if (!suitChar && normalizedSuit) {
+      suitChar = normalizedSuit.charAt(0);
+    }
 
     // Normalize rank
     const rankMap = {
@@ -25,14 +31,15 @@ export default function PlayingCard({ rank, suit, faceDown = false, className })
       'J': 'j', 'j': 'j', 'jack': 'j',
       'Q': 'q', 'q': 'q', 'queen': 'q',
       'K': 'k', 'k': 'k', 'king': 'k',
-      '10': '10', '2': '2', '3': '3', '4': '4',
-      '5': '5', '6': '6', '7': '7', '8': '8', '9': '9'
+      'T': '10', 't': '10', // Ten
     };
 
     const rankStr = rank ? rank.toString() : '';
-    const rankChar = rankMap[rankStr] || rankMap[rankStr.toLowerCase()] || rankStr.toLowerCase();
+    // Check map first, then lowercase
+    const rankChar = rankMap[rankStr] || rankMap[rankStr.toUpperCase()] || rankStr.toLowerCase();
 
-    // Build filename: rank + suit + .png (e.g., "ah.png", "10d.png")
+    // Construct filename: e.g., "ah.png", "10d.png", "ks.png"
+    // Assuming images are strictly rank+suitChar
     return `/cards/${rankChar}${suitChar}.png`;
   };
 
@@ -40,7 +47,8 @@ export default function PlayingCard({ rank, suit, faceDown = false, className })
 
   return (
     <div className={cn(
-      'card relative w-20 h-28 md:w-24 md:h-36 rounded-xl shadow-xl overflow-hidden select-none bg-white',
+      'card relative w-20 h-28 md:w-24 md:h-36 rounded-xl shadow-2xl overflow-hidden select-none bg-white transition-transform duration-200',
+      'border-[3px] border-white', // Consistent white border for all cards
       className
     )}>
       <img
@@ -48,16 +56,21 @@ export default function PlayingCard({ rank, suit, faceDown = false, className })
         alt={faceDown ? 'Card back' : `${rank} of ${suit}`}
         className="w-full h-full object-cover"
         style={{
-          imageRendering: 'high-quality', // Hint for browser to use better scaling
-          transform: 'translateZ(0)', // Force GPU layer to reduce jitter/aliasing
+          imageRendering: 'high-quality',
+          transform: 'translateZ(0)',
           backfaceVisibility: 'hidden',
         }}
         onError={(e) => {
-          // Fallback to card back if image fails to load
           console.error(`Failed to load card image: ${cardImage}`);
           e.target.src = '/cards/back_of_card.jpg';
         }}
       />
+
+      {/* Gloss Effect */}
+      <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent pointer-events-none mix-blend-overlay"></div>
+
+      {/* Inner Shadow for depth */}
+      <div className="absolute inset-0 shadow-[inset_0_0_10px_rgba(0,0,0,0.1)] pointer-events-none rounded-lg"></div>
     </div>
   );
 }

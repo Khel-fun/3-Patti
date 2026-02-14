@@ -4,7 +4,7 @@ import { WagmiProvider } from 'wagmi';
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
 import { useSocket } from './hooks/useSocket';
 import { WalletProvider } from './hooks/useWallet';
-import { NetworkSwitcher } from './components/NetworkSwitcher';
+import NetworkSwitcher from './components/NetworkSwitcher';
 import { config } from './config/wagmi';
 import Home from './pages/Home';
 import GameRoom from './pages/GameRoom';
