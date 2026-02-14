@@ -21,6 +21,7 @@ import { formatChips, formatRoomId, getShortRoomCode } from "@/lib/utils";
 import { useContracts } from "@/hooks/useContracts";
 import GameABI from "@/contracts/TeenPattiGame.json";
 import addresses from "@/contracts/addresses.json";
+import GlowingBackground from "@/components/GlowingBackground";
 
 export default function GameRoom({ socket }) {
   const { roomId } = useParams();
@@ -597,11 +598,7 @@ export default function GameRoom({ socket }) {
     return (
       <div className="min-h-screen bg-[#050505] relative flex items-center justify-center p-4 overflow-hidden">
         {/* Dynamic Background */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-blue-500/5 rounded-full blur-[120px] animate-pulse delay-1000"></div>
-          <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-purple-500/5 rounded-full blur-[120px] animate-pulse delay-700"></div>
-          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03]"></div>
-        </div>
+        <GlowingBackground />
 
         <div className="glass-panel max-w-md w-full rounded-3xl p-[1px] relative overflow-hidden animate-zoom-in duration-500">
           {/* Scanline */}

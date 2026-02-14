@@ -78,14 +78,14 @@ export default function JoinRoomModal({ isOpen, onClose, onSuccess, socket, room
     setRoomCodeInput(value);
     setError('');
     setRoomDetails(null);
-    
+
     const trimmed = value.trim();
-    
+
     // If it's already a full blockchain ID (starts with 0x and is long)
     if (trimmed.startsWith('0x') && trimmed.length > 10) {
       setBlockchainRoomId(trimmed);
       setResolvingCode(false);
-    } 
+    }
     // If it looks like a short code (6 hex characters)
     else if (trimmed.length >= 4 && /^[0-9a-fA-F]+$/.test(trimmed)) {
       // Don't resolve yet, wait for user to click search
@@ -98,7 +98,7 @@ export default function JoinRoomModal({ isOpen, onClose, onSuccess, socket, room
   // Resolve short code to full blockchain room ID
   function handleResolveCode() {
     const trimmed = roomCodeInput.trim();
-    
+
     if (!trimmed) {
       setError('Please enter a room code');
       return;
@@ -264,7 +264,7 @@ export default function JoinRoomModal({ isOpen, onClose, onSuccess, socket, room
   }
 
   return (
-    <div className="fixed inset-0 bg-black/90 backdrop-blur-xl flex items-center justify-center p-4 z-[100] animate-fade-in duration-300">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-[100] animate-fade-in duration-300">
       <div className="glass-panel w-full max-w-lg rounded-3xl p-[1px] relative overflow-hidden shadow-2xl animate-zoom-in duration-300">
 
         {/* Animated Border */}

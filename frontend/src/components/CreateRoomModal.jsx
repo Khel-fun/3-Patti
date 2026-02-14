@@ -116,13 +116,13 @@ export default function CreateRoomModal({ isOpen, onClose, onSuccess, socket }) 
         socket.once('roomCreated', ({ roomId, shortCode }) => {
           setLoading(false);
           setStep('input');
-          
+
           // Store short code for display
           if (shortCode) {
             setCreatedRoomCode(shortCode);
             setMessage(`Room created! Share code: ${shortCode}`);
           }
-          
+
           // Give user a moment to see the code before navigating
           setTimeout(() => {
             onSuccess(roomId, blockchainRoomId);
@@ -176,7 +176,7 @@ export default function CreateRoomModal({ isOpen, onClose, onSuccess, socket }) 
   }
 
   return (
-    <div className="fixed inset-0 bg-black/90 backdrop-blur-xl flex items-center justify-center p-4 z-[100] animate-fade-in duration-300">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-[100] animate-fade-in duration-300">
       <div className="glass-panel w-full max-w-lg rounded-3xl p-[1px] relative overflow-hidden shadow-2xl animate-zoom-in duration-300">
 
         {/* Animated Border */}
